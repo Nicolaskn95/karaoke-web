@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { toast } from "sonner";
 import MusicGrid from "@/components/music-grid";
 import LyricsModal from "@/components/lyrics-modal";
 import Header from "@/components/header";
 import type { Language } from "@/lib/i18n";
+import { translations } from "@/lib/i18n";
 
 export interface Music {
   _id?: string;
@@ -26,26 +28,67 @@ export default function Home() {
     setShowLyrics(true);
   }, []);
 
-  const handleAddToQueue = useCallback(async (music: Music) => {
-    try {
-      const response = await fetch("/api/add-number", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ number: music.id }),
-      });
+  const handleAddToQueue = useCallback(
+    async (music: Music) => {
+      const t = translations[language];
 
-      if (response.ok) {
-        console.log("Added to queue:", music.musica);
-      } else {
-        const errorData = await response.json();
-        console.error("Error adding to queue:", errorData);
+      try {
+        const response = await fetch("/api/add-number", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ number: music.id }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          // Toast de sucesso mostrando o número da música
+          toast.success(t.songAddedSuccess, {
+            description: `${music.musica} - ${music.artista} (#${music.id})`,
+            duration: 3000,
+          });
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+
+          // Verifica se é erro de serviço indisponível
+          if (response.status === 503 || response.status === 500) {
+            toast.error(t.serviceUnavailable, {
+              description:
+                errorData.message ||
+                errorData.error ||
+                (language === "pt"
+                  ? "O serviço de karaokê não está respondendo. Verifique se o serviço está em execução."
+                  : "The karaoke service is not responding. Please check if the service is running."),
+              duration: 5000,
+            });
+          } else {
+            toast.error(t.songAddedError, {
+              description:
+                errorData.message ||
+                errorData.error ||
+                (language === "pt"
+                  ? "Por favor, tente novamente mais tarde."
+                  : "Please try again later."),
+              duration: 4000,
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error adding to queue:", error);
+
+        // Erro de rede ou serviço não disponível
+        toast.error(t.serviceUnavailable, {
+          description:
+            language === "pt"
+              ? "Não foi possível conectar ao serviço de karaokê. Verifique se o serviço está em execução."
+              : "Unable to connect to the karaoke service. Please check if the service is running.",
+          duration: 5000,
+        });
       }
-    } catch (error) {
-      console.error("Error adding to queue:", error);
-    }
-  }, []);
+    },
+    [language]
+  );
 
   const handleToggleTheme = useCallback(() => {
     setIsDark((prev) => !prev);

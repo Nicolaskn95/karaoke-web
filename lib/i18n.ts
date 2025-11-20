@@ -28,6 +28,9 @@ export const translations = {
     confirmMessage: "Are you sure you want to add this song?",
     yes: "Yes",
     no: "No",
+    songAddedSuccess: "Song added to queue",
+    songAddedError: "Failed to add song to queue",
+    serviceUnavailable: "Karaoke service is unavailable",
   },
   pt: {
     title: "Karaokê",
@@ -58,6 +61,9 @@ export const translations = {
     confirmMessage: "Tem certeza que deseja adicionar esta música?",
     yes: "Sim",
     no: "Não",
+    songAddedSuccess: "Música adicionada à fila",
+    songAddedError: "Falha ao adicionar música à fila",
+    serviceUnavailable: "Serviço de karaokê indisponível",
   },
 }
 
