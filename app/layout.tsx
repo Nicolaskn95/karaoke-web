@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   title: "Karaoke - Nicolas Nagano",
   description: "Modern karaoke experience - Select songs, add to queue, and enjoy",
   generator: "v0.app",
+  charset: "utf-8",
   icons: {
     icon: [
       {

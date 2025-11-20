@@ -21,8 +21,11 @@ export default function MusicGrid({ onViewLyrics, onAddToQueue, language }: Musi
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [itemsPerPage, setItemsPerPage] = useState(50)
-  const [filteredMusics, setFilteredMusics] = useState<Music[]>([])
   const [filterApplied, setFilterApplied] = useState(false)
+  const [filterParams, setFilterParams] = useState<{
+    type?: "song" | "artist" | "number"
+    value?: string
+  }>({})
   const t = translations[language]
 
   useEffect(() => {
@@ -30,7 +33,23 @@ export default function MusicGrid({ onViewLyrics, onAddToQueue, language }: Musi
       setIsLoading(true)
       setError(null)
       try {
-        const response = await fetch(`/api/musics?page=${currentPage}&limit=${itemsPerPage}`)
+        const queryParams = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: itemsPerPage.toString(),
+        })
+
+        // Add filter parameters if filter is applied
+        if (filterApplied && filterParams.value) {
+          if (filterParams.type === "song") {
+            queryParams.append("musica", filterParams.value)
+          } else if (filterParams.type === "artist") {
+            queryParams.append("artista", filterParams.value)
+          } else if (filterParams.type === "number") {
+            queryParams.append("id", filterParams.value)
+          }
+        }
+
+        const response = await fetch(`/api/musics?${queryParams.toString()}`)
 
         if (!response.ok) {
           throw new Error("Failed to fetch musics")
@@ -41,26 +60,15 @@ export default function MusicGrid({ onViewLyrics, onAddToQueue, language }: Musi
         setTotalPages(data.pagination?.totalPages || 1)
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred")
-        // Mock data with numbering
-        const allMockMusics: Music[] = Array.from({ length: 150 }, (_, i) => ({
-          id: String(i + 1),
-          arquivo: `song${i + 1}.mp3`,
-          artista: ["The Beatles", "Queen", "David Bowie", "Pink Floyd", "Led Zeppelin"][i % 5],
-          musica: ["Let It Be", "Bohemian Rhapsody", "Space Oddity", "Comfortably Numb", "Stairway to Heaven"][i % 5],
-          inicio: "0:00",
-        }))
-
-        const startIdx = (currentPage - 1) * itemsPerPage
-        const endIdx = startIdx + itemsPerPage
-        setMusics(allMockMusics.slice(startIdx, endIdx))
-        setTotalPages(Math.ceil(allMockMusics.length / itemsPerPage))
+        setMusics([])
+        setTotalPages(1)
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchMusics()
-  }, [currentPage, itemsPerPage])
+  }, [currentPage, itemsPerPage, filterApplied, filterParams])
 
   const handlePreviousPage = () => {
     setCurrentPage((prev) => Math.max(prev - 1, 1))
@@ -77,34 +85,24 @@ export default function MusicGrid({ onViewLyrics, onAddToQueue, language }: Musi
 
   const handleApplyFilter = (searchType: "song" | "artist" | "number", searchValue: string) => {
     if (!searchValue.trim()) {
-      setFilteredMusics([])
       setFilterApplied(false)
+      setFilterParams({})
+      setCurrentPage(1)
       return
     }
 
-    const filtered = musics.filter((music) => {
-      switch (searchType) {
-        case "song":
-          return music.musica.toLowerCase().includes(searchValue.toLowerCase())
-        case "artist":
-          return music.artista.toLowerCase().includes(searchValue.toLowerCase())
-        case "number":
-          return music.id === searchValue
-        default:
-          return true
-      }
-    })
-
-    setFilteredMusics(filtered)
+    setFilterParams({ type: searchType, value: searchValue })
     setFilterApplied(true)
+    setCurrentPage(1)
   }
 
   const handleClearFilter = () => {
-    setFilteredMusics([])
     setFilterApplied(false)
+    setFilterParams({})
+    setCurrentPage(1)
   }
 
-  const displayMusics = filterApplied ? filteredMusics : musics
+  const displayMusics = musics
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">

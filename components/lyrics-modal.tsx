@@ -24,19 +24,45 @@ export default function LyricsModal({ isOpen, onClose, music, language }: Lyrics
     const fetchLyrics = async () => {
       setIsLoading(true)
       setError(null)
+      
+      // Primeiro, tenta buscar no LRCLIB
       try {
-        const response = await fetch(
+        const lrclibResponse = await fetch(
           `https://lrclib.net/api/get?artist_name=${encodeURIComponent(
             music.artista,
           )}&track_name=${encodeURIComponent(music.musica)}`,
         )
 
-        if (!response.ok) {
+        if (lrclibResponse.ok) {
+          const data = await lrclibResponse.json()
+          if (data.plainLyrics) {
+            setLyrics(data.plainLyrics)
+            setIsLoading(false)
+            return
+          }
+        }
+      } catch (err) {
+        console.log("LRCLIB não encontrou a letra, tentando Genius...")
+      }
+
+      // Se não encontrou no LRCLIB, tenta no Genius
+      try {
+        const geniusResponse = await fetch(
+          `/api/lyrics?artista=${encodeURIComponent(
+            music.artista,
+          )}&musica=${encodeURIComponent(music.musica)}`,
+        )
+
+        if (!geniusResponse.ok) {
           throw new Error(t.lyricsNotFound)
         }
 
-        const data = await response.json()
-        setLyrics(data.plainLyrics || t.lyricsNotAvailable)
+        const data = await geniusResponse.json()
+        if (data.lyrics) {
+          setLyrics(data.lyrics)
+        } else {
+          throw new Error(t.lyricsNotFound)
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : t.failedLoadLyrics)
         setLyrics(t.lyricsNotAvailable)

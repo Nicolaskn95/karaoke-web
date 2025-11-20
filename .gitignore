@@ -1,0 +1,62 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependency directories
+node_modules/
+.pnpm/
+.next/
+out/
+dist/
+
+# Testing
+coverage/
+
+# Local env files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env
+yarn.lock
+
+# Build output
+build/
+
+# Misc
+.DS_Store
+*.pem
+
+# OS metadata
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Next.js build
+.next/
+
+# Serialized caches
+.next/cache/
+.cache/
+turbo/
+
+# Log directories
+/logs
+
+# Lockfile backup
+pnpm-lock.yaml.*
+
+# Ignore production output
+/static
+
+# Optional: Ignore local DB or temp dev artifacts
+*.sqlite
+*.db
+

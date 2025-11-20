@@ -1,36 +1,60 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server";
 
-// Mock data - replace with actual backend call
-const MOCK_MUSICS = Array.from({ length: 50 }, (_, i) => ({
-  id: String(i + 1),
-  arquivo: `song${i + 1}.mp3`,
-  artista: ["The Beatles", "Queen", "Led Zeppelin", "Pink Floyd", "David Bowie"][i % 5],
-  musica: ["Let It Be", "Bohemian Rhapsody", "Stairway to Heaven", "Comfortably Numb", "Space Oddity"][i % 5],
-  inicio: "0:00",
-}))
+const EXPRESS_API_URL = process.env.EXPRESS_API_URL || "http://localhost:3000";
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url)
-  const page = Number.parseInt(searchParams.get("page") || "1", 10)
-  const limit = Number.parseInt(searchParams.get("limit") || "12", 10)
+  try {
+    const { searchParams } = new URL(request.url);
+    const page = searchParams.get("page") || "1";
+    const limit = searchParams.get("limit") || "12";
+    const artista = searchParams.get("artista");
+    const musica = searchParams.get("musica");
+    const id = searchParams.get("id");
+    const numero = searchParams.get("numero");
 
-  // Validate pagination parameters
-  const validPage = Math.max(1, page)
-  const validLimit = Math.min(Math.max(1, limit), 100)
+    // Build query string for Express API
+    const queryParams = new URLSearchParams({
+      page,
+      limit,
+    });
 
-  const startIndex = (validPage - 1) * validLimit
-  const endIndex = startIndex + validLimit
-  const data = MOCK_MUSICS.slice(startIndex, endIndex)
+    if (artista) queryParams.append("artista", artista);
+    if (musica) queryParams.append("musica", musica);
+    if (id) queryParams.append("id", id);
+    if (numero) queryParams.append("numero", numero);
 
-  const totalPages = Math.ceil(MOCK_MUSICS.length / validLimit)
+    const apiUrl = `${EXPRESS_API_URL}/musics?${queryParams.toString()}`;
 
-  return NextResponse.json({
-    data,
-    pagination: {
-      page: validPage,
-      limit: validLimit,
-      total: MOCK_MUSICS.length,
-      totalPages,
-    },
-  })
+    const response = await fetch(apiUrl, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        Accept: "application/json; charset=utf-8",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Express API returned ${response.status}`);
+    }
+
+    // Get response as text first to ensure proper encoding
+    const text = await response.text();
+    const data = JSON.parse(text);
+
+    // Ensure UTF-8 encoding in response
+    return NextResponse.json(data, {
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching musics from Express API:", error);
+    return NextResponse.json(
+      {
+        error: "Failed to fetch musics",
+        message: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
+  }
 }
