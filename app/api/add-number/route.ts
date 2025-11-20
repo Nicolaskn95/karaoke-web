@@ -12,7 +12,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Call the karaoke service (jobs service on port 4000)
     const KARAOKE_SERVICE_URL =
       process.env.KARAOKE_SERVICE_URL || "http://localhost:4000";
     const response = await fetch(`${KARAOKE_SERVICE_URL}/add-number`, {
