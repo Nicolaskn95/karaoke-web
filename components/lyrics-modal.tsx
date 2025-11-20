@@ -18,121 +18,172 @@ export default function LyricsModal({
   music,
   language,
 }: LyricsModalProps) {
-  const [lyrics, setLyrics] = useState<string>("");
+  const [geniusLyrics, setGeniusLyrics] = useState<string>("");
+  const [lrclibLyrics, setLrclibLyrics] = useState<string>("");
+  const [selectedSource, setSelectedSource] = useState<
+    "genius" | "lrclib" | null
+  >(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
   const [youtubeUrl, setYoutubeUrl] = useState<string | null>(null);
-  const [lyricsSource, setLyricsSource] = useState<"lrclib" | "genius" | null>(
-    null
-  );
-  const [mediaLinks, setMediaLinks] = useState<
+  const [geniusMediaLinks, setGeniusMediaLinks] = useState<
     Array<{ provider: string; url: string }>
   >([]);
+  const [isLoadingGenius, setIsLoadingGenius] = useState(false);
+  const [isLoadingLrclib, setIsLoadingLrclib] = useState(false);
   const t = translations[language];
+
+  // Lyrics atuais baseado na fonte selecionada
+  const lyrics =
+    selectedSource === "genius"
+      ? geniusLyrics
+      : selectedSource === "lrclib"
+      ? lrclibLyrics
+      : "";
+  const mediaLinks = selectedSource === "genius" ? geniusMediaLinks : [];
 
   useEffect(() => {
     if (!isOpen) return;
 
-    const fetchLyrics = async () => {
+    // Reset states
+    setGeniusLyrics("");
+    setLrclibLyrics("");
+    setSelectedSource(null);
+    setError(null);
+    setYoutubeVideoId(null);
+    setYoutubeUrl(null);
+    setGeniusMediaLinks([]);
+
+    // Buscar ambas as fontes simultaneamente
+    const fetchAllLyrics = async () => {
       setIsLoading(true);
-      setError(null);
+      setIsLoadingGenius(true);
+      setIsLoadingLrclib(true);
 
-      // Primeiro, tenta buscar no Genius
-      try {
-        const geniusResponse = await fetch(
-          `/api/lyrics?artista=${encodeURIComponent(
-            music.artista
-          )}&musica=${encodeURIComponent(music.musica)}`
-        );
+      // Buscar Genius
+      const fetchGenius = async () => {
+        try {
+          const geniusResponse = await fetch(
+            `/api/lyrics?artista=${encodeURIComponent(
+              music.artista
+            )}&musica=${encodeURIComponent(music.musica)}`
+          );
 
-        if (geniusResponse.ok) {
-          const data = await geniusResponse.json();
-          if (data.lyrics) {
-            setLyrics(data.lyrics);
-            setLyricsSource("genius");
+          if (geniusResponse.ok) {
+            const data = await geniusResponse.json();
+            if (data.lyrics) {
+              setGeniusLyrics(data.lyrics);
 
-            // Se tiver links de mídia do Genius, usar eles
-            if (
-              data.media &&
-              Array.isArray(data.media) &&
-              data.media.length > 0
-            ) {
-              setMediaLinks(data.media);
+              // Se tiver links de mídia do Genius, usar eles
+              if (
+                data.media &&
+                Array.isArray(data.media) &&
+                data.media.length > 0
+              ) {
+                setGeniusMediaLinks(data.media);
 
-              // Procurar link do YouTube nos media
-              const youtubeLink = data.media.find(
-                (m: { provider: string; url: string }) =>
-                  m.provider.toLowerCase() === "youtube" ||
-                  m.url.includes("youtube.com") ||
-                  m.url.includes("youtu.be")
-              );
-
-              if (youtubeLink) {
-                // Extrair videoId da URL do YouTube
-                const videoIdMatch = youtubeLink.url.match(
-                  /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
+                // Procurar link do YouTube nos media
+                const youtubeLink = data.media.find(
+                  (m: { provider: string; url: string }) =>
+                    m.provider.toLowerCase() === "youtube" ||
+                    m.url.includes("youtube.com") ||
+                    m.url.includes("youtu.be")
                 );
 
-                if (videoIdMatch && videoIdMatch[1]) {
-                  // VideoId válido encontrado
-                  setYoutubeVideoId(videoIdMatch[1]);
-                } else {
-                  // Tentar extrair de outros formatos
-                  const altMatch = youtubeLink.url.match(/([a-zA-Z0-9_-]{11})/);
-                  if (altMatch && altMatch[1]) {
-                    setYoutubeVideoId(altMatch[1]);
+                if (youtubeLink) {
+                  // Extrair videoId da URL do YouTube
+                  const videoIdMatch = youtubeLink.url.match(
+                    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
+                  );
+
+                  if (videoIdMatch && videoIdMatch[1]) {
+                    setYoutubeVideoId(videoIdMatch[1]);
                   } else {
-                    // Usar URL direta e converter para embed
-                    setYoutubeUrl(youtubeLink.url);
+                    const altMatch =
+                      youtubeLink.url.match(/([a-zA-Z0-9_-]{11})/);
+                    if (altMatch && altMatch[1]) {
+                      setYoutubeVideoId(altMatch[1]);
+                    } else {
+                      setYoutubeUrl(youtubeLink.url);
+                    }
                   }
+                } else {
+                  await fetchYouTubeVideo(music.artista, music.musica);
                 }
               } else {
-                // Se não encontrou YouTube nos media, buscar manualmente
                 await fetchYouTubeVideo(music.artista, music.musica);
               }
-            } else {
-              // Se não tiver media, buscar manualmente
-              await fetchYouTubeVideo(music.artista, music.musica);
             }
-            setIsLoading(false);
-            return;
           }
+        } catch (err) {
+          console.log("Erro ao buscar no Genius:", err);
+        } finally {
+          setIsLoadingGenius(false);
         }
-      } catch (err) {
-        console.log("Genius não encontrou a letra, tentando LRCLIB...");
-      }
+      };
 
-      // Se não encontrou no Genius, tenta no LRCLIB
-      try {
-        const lrclibResponse = await fetch(
-          `https://lrclib.net/api/get?artist_name=${encodeURIComponent(
-            music.artista
-          )}&track_name=${encodeURIComponent(music.musica)}`
-        );
+      // Buscar LRCLIB
+      const fetchLrclib = async () => {
+        try {
+          const lrclibResponse = await fetch(
+            `https://lrclib.net/api/get?artist_name=${encodeURIComponent(
+              music.artista
+            )}&track_name=${encodeURIComponent(music.musica)}`
+          );
 
-        if (lrclibResponse.ok) {
-          const data = await lrclibResponse.json();
-          if (data.plainLyrics) {
-            setLyrics(data.plainLyrics);
-            setLyricsSource("lrclib");
-            await fetchYouTubeVideo(music.artista, music.musica);
-            setIsLoading(false);
-            return;
+          if (lrclibResponse.ok) {
+            const data = await lrclibResponse.json();
+            if (data.plainLyrics) {
+              setLrclibLyrics(data.plainLyrics);
+            }
           }
+        } catch (err) {
+          console.log("Erro ao buscar no LRCLIB:", err);
+        } finally {
+          setIsLoadingLrclib(false);
         }
-      } catch (err) {
-        console.log("LRCLIB também não encontrou a letra");
-      }
+      };
 
-      // Se nenhum dos dois encontrou
-      setError(t.lyricsNotFound);
-      setLyrics(t.lyricsNotAvailable);
+      // Buscar ambas simultaneamente
+      await Promise.all([fetchGenius(), fetchLrclib()]);
+
       setIsLoading(false);
     };
 
-    fetchLyrics();
+    fetchAllLyrics();
   }, [isOpen, music, language, t]);
+
+  // Selecionar automaticamente a primeira fonte encontrada
+  useEffect(() => {
+    if (!selectedSource) {
+      if (geniusLyrics) {
+        setSelectedSource("genius");
+      } else if (lrclibLyrics) {
+        setSelectedSource("lrclib");
+        // Se não tiver vídeo do Genius, buscar para LRCLIB
+        if (!youtubeVideoId && !youtubeUrl) {
+          fetchYouTubeVideo(music.artista, music.musica);
+        }
+      } else if (
+        !isLoading &&
+        !isLoadingGenius &&
+        !isLoadingLrclib &&
+        !geniusLyrics &&
+        !lrclibLyrics
+      ) {
+        setError(t.lyricsNotFound);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    geniusLyrics,
+    lrclibLyrics,
+    selectedSource,
+    isLoading,
+    isLoadingGenius,
+    isLoadingLrclib,
+  ]);
 
   // Função para buscar vídeo do YouTube
   const fetchYouTubeVideo = async (artista: string, musica: string) => {
@@ -194,7 +245,7 @@ export default function LyricsModal({
           </div>
 
           <div className="flex-1 overflow-y-auto overscroll-contain p-4 md:p-6 min-h-0">
-            {isLoading ? (
+            {isLoading && !geniusLyrics && !lrclibLyrics ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                   <div className="w-10 h-10 rounded-full border-3 border-accent/20 border-t-accent animate-spin mx-auto mb-3"></div>
@@ -203,15 +254,77 @@ export default function LyricsModal({
                   </p>
                 </div>
               </div>
-            ) : error ? (
+            ) : error && !geniusLyrics && !lrclibLyrics ? (
               <div className="text-center text-gray-600">
                 <p className="text-lg mb-2">⚠️</p>
                 <p className="text-sm md:text-base">{error}</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {/* YouTube Video - Mostrar apenas se tiver letra do Genius ou LRCLIB */}
-                {lyricsSource && (youtubeVideoId || youtubeUrl) && (
+                {/* Seleção de fonte - Mostrar se tiver ambas ou pelo menos uma */}
+                {(geniusLyrics || lrclibLyrics) && (
+                  <div className="flex gap-2 mb-4 p-2 bg-gray-50 rounded-lg border border-gray-200/50">
+                    <p className="text-xs text-gray-600 mr-2 flex items-center">
+                      {t.selectSource}:
+                    </p>
+                    <button
+                      onClick={() => {
+                        setSelectedSource("genius");
+                        // Se mudar para Genius e tiver media, atualizar vídeo
+                        if (geniusMediaLinks.length > 0) {
+                          const youtubeLink = geniusMediaLinks.find(
+                            (m: { provider: string; url: string }) =>
+                              m.provider.toLowerCase() === "youtube" ||
+                              m.url.includes("youtube.com") ||
+                              m.url.includes("youtu.be")
+                          );
+                          if (youtubeLink) {
+                            const videoIdMatch = youtubeLink.url.match(
+                              /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
+                            );
+                            if (videoIdMatch && videoIdMatch[1]) {
+                              setYoutubeVideoId(videoIdMatch[1]);
+                            } else {
+                              setYoutubeUrl(youtubeLink.url);
+                            }
+                          }
+                        }
+                      }}
+                      disabled={!geniusLyrics || isLoadingGenius}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                        selectedSource === "genius"
+                          ? "bg-primary text-white"
+                          : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                      } ${
+                        !geniusLyrics ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    >
+                      {isLoadingGenius ? "..." : `🎵 ${t.genius}`}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedSource("lrclib");
+                        // Se mudar para LRCLIB e não tiver vídeo, buscar
+                        if (!youtubeVideoId && !youtubeUrl) {
+                          fetchYouTubeVideo(music.artista, music.musica);
+                        }
+                      }}
+                      disabled={!lrclibLyrics || isLoadingLrclib}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                        selectedSource === "lrclib"
+                          ? "bg-primary text-white"
+                          : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                      } ${
+                        !lrclibLyrics ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    >
+                      {isLoadingLrclib ? "..." : `📝 ${t.lrclib}`}
+                    </button>
+                  </div>
+                )}
+
+                {/* YouTube Video - Mostrar quando tiver vídeo disponível */}
+                {selectedSource && (youtubeVideoId || youtubeUrl) && (
                   <div className="w-full aspect-video rounded-lg overflow-hidden bg-gray-100 mb-4 border border-gray-200/50 shadow-sm">
                     {youtubeVideoId && youtubeVideoId.length === 11 ? (
                       // Se for um videoId válido (11 caracteres), usar embed direto
@@ -272,7 +385,7 @@ export default function LyricsModal({
                 )}
 
                 {/* Outros links de mídia do Genius */}
-                {lyricsSource === "genius" && mediaLinks.length > 0 && (
+                {selectedSource === "genius" && mediaLinks.length > 0 && (
                   <div className="mb-4 p-3 bg-gray-50/80 rounded-lg border border-gray-200/50">
                     <p className="text-xs text-gray-600 mb-2">Outros links:</p>
                     <div className="flex flex-wrap gap-2">
@@ -299,9 +412,9 @@ export default function LyricsModal({
                 )}
 
                 {/* Fonte da letra */}
-                {lyricsSource && (
+                {selectedSource && (
                   <div className="text-xs text-gray-500 mb-2 pb-2 border-b border-gray-200/50">
-                    {lyricsSource === "lrclib"
+                    {selectedSource === "lrclib"
                       ? "📝 Fonte: LRCLIB"
                       : "🎵 Fonte: Genius"}
                   </div>

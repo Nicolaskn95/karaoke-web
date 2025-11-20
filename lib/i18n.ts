@@ -31,6 +31,9 @@ export const translations = {
     songAddedSuccess: "Song added to queue",
     songAddedError: "Failed to add song to queue",
     serviceUnavailable: "Karaoke service is unavailable",
+    selectSource: "Select source",
+    genius: "Genius",
+    lrclib: "LRCLIB",
   },
   pt: {
     title: "Karaokê",
@@ -64,6 +67,9 @@ export const translations = {
     songAddedSuccess: "Música adicionada à fila",
     songAddedError: "Falha ao adicionar música à fila",
     serviceUnavailable: "Serviço de karaokê indisponível",
+    selectSource: "Selecionar fonte",
+    genius: "Genius",
+    lrclib: "LRCLIB",
   },
 }
 
