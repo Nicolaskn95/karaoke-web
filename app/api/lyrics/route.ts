@@ -19,8 +19,22 @@ export async function GET(request: NextRequest) {
     const GENIUS_API_KEY = process.env.GENIUS_API_KEY;
 
     if (!GENIUS_API_KEY) {
+      console.error("GENIUS_API_KEY não encontrada nas variáveis de ambiente");
+      console.error(
+        "Variáveis de ambiente disponíveis:",
+        Object.keys(process.env).filter(
+          (key) => key.includes("GENIUS") || key.includes("API")
+        )
+      );
+
       return NextResponse.json(
-        { error: "Genius API key não configurada" },
+        {
+          error: "Genius API key não configurada",
+          hint:
+            process.env.NODE_ENV === "production"
+              ? "Configure GENIUS_API_KEY nas variáveis de ambiente da plataforma de deploy (Vercel, Netlify, etc.)"
+              : "Configure GENIUS_API_KEY no arquivo .env.local",
+        },
         { status: 500 }
       );
     }
