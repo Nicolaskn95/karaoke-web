@@ -1,4 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
+import dotenv from "dotenv";
+dotenv.config();
 
 // @ts-ignore - genius-lyrics-api não tem tipos TypeScript
 const geniusLyricsApi = require("genius-lyrics-api");
