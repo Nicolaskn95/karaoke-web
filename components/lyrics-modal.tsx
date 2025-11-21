@@ -25,11 +25,6 @@ export default function LyricsModal({
   >(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
-  const [youtubeUrl, setYoutubeUrl] = useState<string | null>(null);
-  const [geniusMediaLinks, setGeniusMediaLinks] = useState<
-    Array<{ provider: string; url: string }>
-  >([]);
   const [isLoadingGenius, setIsLoadingGenius] = useState(false);
   const [isLoadingLrclib, setIsLoadingLrclib] = useState(false);
   const t = translations[language];
@@ -41,7 +36,6 @@ export default function LyricsModal({
       : selectedSource === "lrclib"
       ? lrclibLyrics
       : "";
-  const mediaLinks = selectedSource === "genius" ? geniusMediaLinks : [];
 
   useEffect(() => {
     if (!isOpen) return;
@@ -51,9 +45,6 @@ export default function LyricsModal({
     setLrclibLyrics("");
     setSelectedSource(null);
     setError(null);
-    setYoutubeVideoId(null);
-    setYoutubeUrl(null);
-    setGeniusMediaLinks([]);
 
     // Buscar ambas as fontes simultaneamente
     const fetchAllLyrics = async () => {
@@ -74,46 +65,6 @@ export default function LyricsModal({
             const data = await geniusResponse.json();
             if (data.lyrics) {
               setGeniusLyrics(data.lyrics);
-
-              // Se tiver links de mídia do Genius, usar eles
-              if (
-                data.media &&
-                Array.isArray(data.media) &&
-                data.media.length > 0
-              ) {
-                setGeniusMediaLinks(data.media);
-
-                // Procurar link do YouTube nos media
-                const youtubeLink = data.media.find(
-                  (m: { provider: string; url: string }) =>
-                    m.provider.toLowerCase() === "youtube" ||
-                    m.url.includes("youtube.com") ||
-                    m.url.includes("youtu.be")
-                );
-
-                if (youtubeLink) {
-                  // Extrair videoId da URL do YouTube
-                  const videoIdMatch = youtubeLink.url.match(
-                    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
-                  );
-
-                  if (videoIdMatch && videoIdMatch[1]) {
-                    setYoutubeVideoId(videoIdMatch[1]);
-                  } else {
-                    const altMatch =
-                      youtubeLink.url.match(/([a-zA-Z0-9_-]{11})/);
-                    if (altMatch && altMatch[1]) {
-                      setYoutubeVideoId(altMatch[1]);
-                    } else {
-                      setYoutubeUrl(youtubeLink.url);
-                    }
-                  }
-                } else {
-                  await fetchYouTubeVideo(music.artista, music.musica);
-                }
-              } else {
-                await fetchYouTubeVideo(music.artista, music.musica);
-              }
             }
           }
         } catch (err) {
@@ -161,10 +112,6 @@ export default function LyricsModal({
         setSelectedSource("genius");
       } else if (lrclibLyrics) {
         setSelectedSource("lrclib");
-        // Se não tiver vídeo do Genius, buscar para LRCLIB
-        if (!youtubeVideoId && !youtubeUrl) {
-          fetchYouTubeVideo(music.artista, music.musica);
-        }
       } else if (
         !isLoading &&
         !isLoadingGenius &&
@@ -184,36 +131,6 @@ export default function LyricsModal({
     isLoadingGenius,
     isLoadingLrclib,
   ]);
-
-  // Função para buscar vídeo do YouTube
-  const fetchYouTubeVideo = async (artista: string, musica: string) => {
-    try {
-      // Buscar via API route
-      const response = await fetch(
-        `/api/youtube?artista=${encodeURIComponent(
-          artista
-        )}&musica=${encodeURIComponent(musica)}`
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.videoId && data.videoId.length === 11) {
-          // VideoId válido encontrado
-          setYoutubeVideoId(data.videoId);
-        } else {
-          // Tentar extrair videoId de uma URL se disponível
-          // Ou usar busca inteligente que retorna o primeiro resultado
-          const searchQuery = `${artista} ${musica} official`;
-          // Usar o iframe de busca do YouTube que mostra resultados
-          // Mas melhor ainda: tentar buscar o primeiro resultado via API
-          setYoutubeVideoId(null); // Não definir se não tiver videoId válido
-        }
-      }
-    } catch (err) {
-      console.error("Erro ao buscar vídeo do YouTube:", err);
-      setYoutubeVideoId(null);
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -270,25 +187,6 @@ export default function LyricsModal({
                     <button
                       onClick={() => {
                         setSelectedSource("genius");
-                        // Se mudar para Genius e tiver media, atualizar vídeo
-                        if (geniusMediaLinks.length > 0) {
-                          const youtubeLink = geniusMediaLinks.find(
-                            (m: { provider: string; url: string }) =>
-                              m.provider.toLowerCase() === "youtube" ||
-                              m.url.includes("youtube.com") ||
-                              m.url.includes("youtu.be")
-                          );
-                          if (youtubeLink) {
-                            const videoIdMatch = youtubeLink.url.match(
-                              /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
-                            );
-                            if (videoIdMatch && videoIdMatch[1]) {
-                              setYoutubeVideoId(videoIdMatch[1]);
-                            } else {
-                              setYoutubeUrl(youtubeLink.url);
-                            }
-                          }
-                        }
                       }}
                       disabled={!geniusLyrics || isLoadingGenius}
                       className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
@@ -304,10 +202,6 @@ export default function LyricsModal({
                     <button
                       onClick={() => {
                         setSelectedSource("lrclib");
-                        // Se mudar para LRCLIB e não tiver vídeo, buscar
-                        if (!youtubeVideoId && !youtubeUrl) {
-                          fetchYouTubeVideo(music.artista, music.musica);
-                        }
                       }}
                       disabled={!lrclibLyrics || isLoadingLrclib}
                       className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
@@ -320,94 +214,6 @@ export default function LyricsModal({
                     >
                       {isLoadingLrclib ? "..." : `📝 ${t.lrclib}`}
                     </button>
-                  </div>
-                )}
-
-                {/* YouTube Video - Mostrar quando tiver vídeo disponível */}
-                {selectedSource && (youtubeVideoId || youtubeUrl) && (
-                  <div className="w-full aspect-video rounded-lg overflow-hidden bg-gray-100 mb-4 border border-gray-200/50 shadow-sm">
-                    {youtubeVideoId && youtubeVideoId.length === 11 ? (
-                      // Se for um videoId válido (11 caracteres), usar embed direto
-                      <iframe
-                        width="100%"
-                        height="100%"
-                        src={`https://www.youtube.com/embed/${youtubeVideoId}?rel=0&modestbranding=1`}
-                        title={`${music.musica} - ${music.artista}`}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        className="w-full h-full"
-                      />
-                    ) : youtubeUrl ? (
-                      // Se tiver URL direta do YouTube, converter para embed
-                      <iframe
-                        width="100%"
-                        height="100%"
-                        src={(() => {
-                          // Converter diferentes formatos de URL do YouTube para embed
-                          let embedUrl = youtubeUrl;
-                          // youtube.com/watch?v=VIDEO_ID -> embed/VIDEO_ID
-                          embedUrl = embedUrl.replace(
-                            /youtube\.com\/watch\?v=([^&]+)/,
-                            "youtube.com/embed/$1"
-                          );
-                          // youtu.be/VIDEO_ID -> youtube.com/embed/VIDEO_ID
-                          embedUrl = embedUrl.replace(
-                            /youtu\.be\/([^?]+)/,
-                            "youtube.com/embed/$1"
-                          );
-                          // youtube.com/embed/ já está correto
-                          if (!embedUrl.includes("embed")) {
-                            // Se ainda não for embed, tentar extrair videoId
-                            const videoIdMatch = embedUrl.match(
-                              /(?:v=|\/)([a-zA-Z0-9_-]{11})/
-                            );
-                            if (videoIdMatch) {
-                              embedUrl = `https://www.youtube.com/embed/${videoIdMatch[1]}`;
-                            }
-                          }
-                          // Garantir que seja HTTPS
-                          if (!embedUrl.startsWith("http")) {
-                            embedUrl = `https://${embedUrl}`;
-                          }
-                          return (
-                            embedUrl +
-                            (embedUrl.includes("?") ? "&" : "?") +
-                            "rel=0&modestbranding=1"
-                          );
-                        })()}
-                        title={`${music.musica} - ${music.artista}`}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        className="w-full h-full"
-                      />
-                    ) : null}
-                  </div>
-                )}
-
-                {/* Outros links de mídia do Genius */}
-                {selectedSource === "genius" && mediaLinks.length > 0 && (
-                  <div className="mb-4 p-3 bg-gray-50/80 rounded-lg border border-gray-200/50">
-                    <p className="text-xs text-gray-600 mb-2">Outros links:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {mediaLinks
-                        .filter(
-                          (link) =>
-                            link.provider.toLowerCase() !== "youtube" &&
-                            !link.url.includes("youtube.com") &&
-                            !link.url.includes("youtu.be")
-                        )
-                        .map((link, index) => (
-                          <a
-                            key={index}
-                            href={link.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-3 py-1 text-xs bg-primary/20 hover:bg-primary/30 text-primary rounded border border-primary/30 transition-colors"
-                          >
-                            {link.provider}
-                          </a>
-                        ))}
-                    </div>
                   </div>
                 )}
 

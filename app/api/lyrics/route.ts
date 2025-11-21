@@ -77,75 +77,8 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      // Extrair links de mídia da página do Genius se tiver URL
-      const mediaLinks: Array<{ provider: string; url: string }> = [];
-
-      if (songData && songData.url) {
-        try {
-          // Fazer scraping da página do Genius para obter media
-          const pageResponse = await fetch(songData.url);
-          if (pageResponse.ok) {
-            const pageHtml = await pageResponse.text();
-
-            // Procurar por JSON-LD ou dados estruturados com media
-            const jsonLdMatch = pageHtml.match(
-              /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/
-            );
-            if (jsonLdMatch) {
-              try {
-                const jsonData = JSON.parse(jsonLdMatch[1]);
-                if (jsonData.audio && Array.isArray(jsonData.audio)) {
-                  jsonData.audio.forEach((audio: any) => {
-                    if (audio.contentUrl) {
-                      mediaLinks.push({
-                        provider: "audio",
-                        url: audio.contentUrl,
-                      });
-                    }
-                  });
-                }
-              } catch (e) {
-                // Ignorar erro de parsing
-              }
-            }
-
-            // Procurar por iframes do YouTube na página
-            const youtubeMatches = pageHtml.match(
-              /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/g
-            );
-            if (youtubeMatches) {
-              youtubeMatches.forEach((match) => {
-                const videoId = match.match(/\/([a-zA-Z0-9_-]{11})/)?.[1];
-                if (videoId) {
-                  mediaLinks.push({
-                    provider: "youtube",
-                    url: `https://www.youtube.com/watch?v=${videoId}`,
-                  });
-                }
-              });
-            }
-
-            // Procurar por links de YouTube
-            const youtubeLinkMatches = pageHtml.match(
-              /https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/g
-            );
-            if (youtubeLinkMatches) {
-              youtubeLinkMatches.forEach((url) => {
-                mediaLinks.push({
-                  provider: "youtube",
-                  url: url,
-                });
-              });
-            }
-          }
-        } catch (err) {
-          console.error("Erro ao buscar media da página:", err);
-        }
-      }
-
       return NextResponse.json({
         lyrics,
-        media: mediaLinks.length > 0 ? mediaLinks : undefined,
       });
     } catch (error: any) {
       console.error("Erro ao buscar letra no Genius:", error);
