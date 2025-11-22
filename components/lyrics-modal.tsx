@@ -189,7 +189,10 @@ export default function LyricsModal({
             ) : (
               <div className="space-y-4">
                 {/* Seleção de fonte - Mostrar sempre, mesmo quando carregando */}
-                {(isLoadingGenius || isLoadingLrclib || geniusLyrics || lrclibLyrics) && (
+                {(isLoadingGenius ||
+                  isLoadingLrclib ||
+                  geniusLyrics ||
+                  lrclibLyrics) && (
                   <div className="flex gap-2 mb-4 p-2 bg-gray-50 rounded-lg border border-gray-200/50">
                     <p className="text-xs text-gray-600 mr-2 flex items-center">
                       {t.selectSource}:
@@ -198,7 +201,9 @@ export default function LyricsModal({
                       onClick={() => {
                         setSelectedSource("genius");
                       }}
-                      disabled={isLoadingGenius || (!geniusLyrics && !isLoadingGenius)}
+                      disabled={
+                        isLoadingGenius || (!geniusLyrics && !isLoadingGenius)
+                      }
                       className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
                         selectedSource === "genius"
                           ? "bg-primary text-white"
@@ -222,7 +227,9 @@ export default function LyricsModal({
                       onClick={() => {
                         setSelectedSource("lrclib");
                       }}
-                      disabled={isLoadingLrclib || (!lrclibLyrics && !isLoadingLrclib)}
+                      disabled={
+                        isLoadingLrclib || (!lrclibLyrics && !isLoadingLrclib)
+                      }
                       className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
                         selectedSource === "lrclib"
                           ? "bg-primary text-white"
