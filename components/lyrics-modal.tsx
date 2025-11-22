@@ -188,8 +188,8 @@ export default function LyricsModal({
               </div>
             ) : (
               <div className="space-y-4">
-                {/* Seleção de fonte - Mostrar se tiver ambas ou pelo menos uma */}
-                {(geniusLyrics || lrclibLyrics) && (
+                {/* Seleção de fonte - Mostrar sempre, mesmo quando carregando */}
+                {(isLoadingGenius || isLoadingLrclib || geniusLyrics || lrclibLyrics) && (
                   <div className="flex gap-2 mb-4 p-2 bg-gray-50 rounded-lg border border-gray-200/50">
                     <p className="text-xs text-gray-600 mr-2 flex items-center">
                       {t.selectSource}:
@@ -198,31 +198,49 @@ export default function LyricsModal({
                       onClick={() => {
                         setSelectedSource("genius");
                       }}
-                      disabled={!geniusLyrics || isLoadingGenius}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                      disabled={isLoadingGenius || (!geniusLyrics && !isLoadingGenius)}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
                         selectedSource === "genius"
                           ? "bg-primary text-white"
                           : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
                       } ${
-                        !geniusLyrics ? "opacity-50 cursor-not-allowed" : ""
+                        isLoadingGenius || (!geniusLyrics && !isLoadingGenius)
+                          ? "opacity-50 cursor-not-allowed"
+                          : ""
                       }`}
                     >
-                      {isLoadingGenius ? "..." : `🎵 ${t.genius}`}
+                      {isLoadingGenius ? (
+                        <>
+                          <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                          <span>{t.loadingLyrics}</span>
+                        </>
+                      ) : (
+                        <span>🎵 {t.genius}</span>
+                      )}
                     </button>
                     <button
                       onClick={() => {
                         setSelectedSource("lrclib");
                       }}
-                      disabled={!lrclibLyrics || isLoadingLrclib}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                      disabled={isLoadingLrclib || (!lrclibLyrics && !isLoadingLrclib)}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
                         selectedSource === "lrclib"
                           ? "bg-primary text-white"
                           : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
                       } ${
-                        !lrclibLyrics ? "opacity-50 cursor-not-allowed" : ""
+                        isLoadingLrclib || (!lrclibLyrics && !isLoadingLrclib)
+                          ? "opacity-50 cursor-not-allowed"
+                          : ""
                       }`}
                     >
-                      {isLoadingLrclib ? "..." : `📝 ${t.lrclib}`}
+                      {isLoadingLrclib ? (
+                        <>
+                          <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                          <span>{t.loadingLyrics}</span>
+                        </>
+                      ) : (
+                        <span>📝 {t.lrclib}</span>
+                      )}
                     </button>
                   </div>
                 )}
