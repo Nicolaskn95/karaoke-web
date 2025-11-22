@@ -1,123 +1,147 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import MusicRow from "./music-row"
-import PaginationControls from "./pagination-controls"
-import FilterSection from "./filter-section"
-import type { Music } from "@/app/page"
-import type { Language } from "@/lib/i18n"
-import { translations } from "@/lib/i18n"
+import { useState, useEffect } from "react";
+import MusicRow from "./music-row";
+import PaginationControls from "./pagination-controls";
+import FilterSection from "./filter-section";
+import type { Music } from "@/app/page";
+import type { Language } from "@/lib/i18n";
+import { translations } from "@/lib/i18n";
 
 interface MusicGridProps {
-  onViewLyrics: (music: Music) => void
-  onAddToQueue: (music: Music) => void
-  language: Language
+  onViewLyrics: (music: Music) => void;
+  onAddToQueue: (music: Music) => void;
+  language: Language;
+  isLoadingLyrics?: boolean;
+  selectedMusicId?: string;
 }
 
-export default function MusicGrid({ onViewLyrics, onAddToQueue, language }: MusicGridProps) {
-  const [musics, setMusics] = useState<Music[]>([])
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [itemsPerPage, setItemsPerPage] = useState(50)
-  const [filterApplied, setFilterApplied] = useState(false)
+export default function MusicGrid({
+  onViewLyrics,
+  onAddToQueue,
+  language,
+  isLoadingLyrics = false,
+  selectedMusicId,
+}: MusicGridProps) {
+  const [musics, setMusics] = useState<Music[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [filterApplied, setFilterApplied] = useState(false);
   const [filterParams, setFilterParams] = useState<{
-    type?: "song" | "artist" | "number"
-    value?: string
-  }>({})
-  const t = translations[language]
+    type?: "song" | "artist" | "number";
+    value?: string;
+  }>({});
+  const t = translations[language];
 
   useEffect(() => {
     const fetchMusics = async () => {
-      setIsLoading(true)
-      setError(null)
+      setIsLoading(true);
+      setError(null);
       try {
         const queryParams = new URLSearchParams({
           page: currentPage.toString(),
           limit: itemsPerPage.toString(),
-        })
+        });
 
         // Add filter parameters if filter is applied
         if (filterApplied && filterParams.value) {
           if (filterParams.type === "song") {
-            queryParams.append("musica", filterParams.value)
+            queryParams.append("musica", filterParams.value);
           } else if (filterParams.type === "artist") {
-            queryParams.append("artista", filterParams.value)
+            queryParams.append("artista", filterParams.value);
           } else if (filterParams.type === "number") {
-            queryParams.append("id", filterParams.value)
+            queryParams.append("id", filterParams.value);
           }
         }
 
-        const response = await fetch(`/api/musics?${queryParams.toString()}`)
+        const response = await fetch(`/api/musics?${queryParams.toString()}`);
 
         if (!response.ok) {
-          throw new Error("Failed to fetch musics")
+          throw new Error("Failed to fetch musics");
         }
 
-        const data = await response.json()
-        setMusics(data.data || [])
-        setTotalPages(data.pagination?.totalPages || 1)
+        const data = await response.json();
+        setMusics(data.data || []);
+        setTotalPages(data.pagination?.totalPages || 1);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred")
-        setMusics([])
-        setTotalPages(1)
+        setError(err instanceof Error ? err.message : "An error occurred");
+        setMusics([]);
+        setTotalPages(1);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchMusics()
-  }, [currentPage, itemsPerPage, filterApplied, filterParams])
+    fetchMusics();
+  }, [currentPage, itemsPerPage, filterApplied, filterParams]);
 
   const handlePreviousPage = () => {
-    setCurrentPage((prev) => Math.max(prev - 1, 1))
-  }
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
 
   const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-  }
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
 
   const handleItemsPerPageChange = (value: number) => {
-    setItemsPerPage(value)
-    setCurrentPage(1)
-  }
+    setItemsPerPage(value);
+    setCurrentPage(1);
+  };
 
-  const handleApplyFilter = (searchType: "song" | "artist" | "number", searchValue: string) => {
+  const handleApplyFilter = (
+    searchType: "song" | "artist" | "number",
+    searchValue: string
+  ) => {
     if (!searchValue.trim()) {
-      setFilterApplied(false)
-      setFilterParams({})
-      setCurrentPage(1)
-      return
+      setFilterApplied(false);
+      setFilterParams({});
+      setCurrentPage(1);
+      return;
     }
 
-    setFilterParams({ type: searchType, value: searchValue })
-    setFilterApplied(true)
-    setCurrentPage(1)
-  }
+    setFilterParams({ type: searchType, value: searchValue });
+    setFilterApplied(true);
+    setCurrentPage(1);
+  };
 
   const handleClearFilter = () => {
-    setFilterApplied(false)
-    setFilterParams({})
-    setCurrentPage(1)
-  }
+    setFilterApplied(false);
+    setFilterParams({});
+    setCurrentPage(1);
+  };
 
-  const displayMusics = musics
+  const displayMusics = musics;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
-      <FilterSection onApplyFilter={handleApplyFilter} onClearFilter={handleClearFilter} language={language} />
+      <FilterSection
+        onApplyFilter={handleApplyFilter}
+        onClearFilter={handleClearFilter}
+        language={language}
+      />
 
       <div className="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <p className="text-xs md:text-sm text-muted-foreground">
             {filterApplied
               ? `Found: ${displayMusics.length} songs`
-              : `Showing ${displayMusics.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to ${Math.min(currentPage * itemsPerPage, (currentPage - 1) * itemsPerPage + displayMusics.length)}`}
+              : `Showing ${
+                  displayMusics.length > 0
+                    ? (currentPage - 1) * itemsPerPage + 1
+                    : 0
+                } to ${Math.min(
+                  currentPage * itemsPerPage,
+                  (currentPage - 1) * itemsPerPage + displayMusics.length
+                )}`}
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <label className="text-xs md:text-sm text-muted-foreground whitespace-nowrap">{t.songsPerPage}</label>
+          <label className="text-xs md:text-sm text-muted-foreground whitespace-nowrap">
+            {t.songsPerPage}
+          </label>
           <select
             value={itemsPerPage}
             onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
@@ -150,6 +174,9 @@ export default function MusicGrid({ onViewLyrics, onAddToQueue, language }: Musi
                 onViewLyrics={() => onViewLyrics(music)}
                 onAddToQueue={() => onAddToQueue(music)}
                 language={language}
+                isLoadingLyrics={
+                  isLoadingLyrics && selectedMusicId === music.id
+                }
               />
             ))}
           </div>
@@ -165,5 +192,5 @@ export default function MusicGrid({ onViewLyrics, onAddToQueue, language }: Musi
         </>
       )}
     </div>
-  )
+  );
 }

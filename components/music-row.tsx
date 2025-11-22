@@ -11,9 +11,10 @@ interface MusicRowProps {
   onViewLyrics: () => void
   onAddToQueue: () => void
   language: Language
+  isLoadingLyrics?: boolean
 }
 
-export default function MusicRow({ music, onViewLyrics, onAddToQueue, language }: MusicRowProps) {
+export default function MusicRow({ music, onViewLyrics, onAddToQueue, language, isLoadingLyrics = false }: MusicRowProps) {
   const [isAdding, setIsAdding] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const t = translations[language]
@@ -50,9 +51,17 @@ export default function MusicRow({ music, onViewLyrics, onAddToQueue, language }
         <div className="flex items-center gap-2 flex-shrink-0">
           <button
             onClick={onViewLyrics}
-            className="px-2 md:px-3 py-1 md:py-1.5 rounded-md bg-primary/20 hover:bg-primary/40 text-primary border border-primary/30 hover:border-primary/50 transition-all duration-200 text-xs font-medium whitespace-nowrap"
+            disabled={isLoadingLyrics}
+            className="px-2 md:px-3 py-1 md:py-1.5 rounded-md bg-primary/20 hover:bg-primary/40 text-primary border border-primary/30 hover:border-primary/50 transition-all duration-200 text-xs font-medium whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
           >
-            {t.lyrics}
+            {isLoadingLyrics ? (
+              <>
+                <div className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                <span>{t.loadingLyrics}</span>
+              </>
+            ) : (
+              <span>{t.lyrics}</span>
+            )}
           </button>
           <button
             onClick={handleAddClick}

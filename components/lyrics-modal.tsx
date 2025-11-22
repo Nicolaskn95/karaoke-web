@@ -10,6 +10,7 @@ interface LyricsModalProps {
   onClose: () => void;
   music: Music;
   language: Language;
+  onLoadingChange?: (loading: boolean) => void;
 }
 
 export default function LyricsModal({
@@ -17,6 +18,7 @@ export default function LyricsModal({
   onClose,
   music,
   language,
+  onLoadingChange,
 }: LyricsModalProps) {
   const [geniusLyrics, setGeniusLyrics] = useState<string>("");
   const [lrclibLyrics, setLrclibLyrics] = useState<string>("");
@@ -51,6 +53,7 @@ export default function LyricsModal({
       setIsLoading(true);
       setIsLoadingGenius(true);
       setIsLoadingLrclib(true);
+      onLoadingChange?.(true);
 
       // Buscar Genius
       const fetchGenius = async () => {
@@ -100,10 +103,11 @@ export default function LyricsModal({
       await Promise.all([fetchGenius(), fetchLrclib()]);
 
       setIsLoading(false);
+      onLoadingChange?.(false);
     };
 
     fetchAllLyrics();
-  }, [isOpen, music, language, t]);
+  }, [isOpen, music, language, t, onLoadingChange]);
 
   // Selecionar automaticamente a primeira fonte encontrada
   useEffect(() => {
@@ -138,7 +142,10 @@ export default function LyricsModal({
     <>
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300"
-        onClick={onClose}
+        onClick={() => {
+          onLoadingChange?.(false);
+          onClose();
+        }}
       />
 
       <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4">
@@ -153,7 +160,10 @@ export default function LyricsModal({
               </p>
             </div>
             <button
-              onClick={onClose}
+              onClick={() => {
+                onLoadingChange?.(false);
+                onClose();
+              }}
               className="ml-2 flex-shrink-0 p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 text-gray-600 hover:text-gray-800"
               aria-label="Close"
             >
@@ -236,7 +246,10 @@ export default function LyricsModal({
 
           <div className="flex gap-3 p-4 md:p-6 border-t border-gray-200/50">
             <button
-              onClick={onClose}
+              onClick={() => {
+                onLoadingChange?.(false);
+                onClose();
+              }}
               className="flex-1 px-4 py-2 rounded-lg bg-primary/20 hover:bg-primary/40 text-primary border border-primary/30 hover:border-primary/50 transition-all duration-200 font-medium text-sm"
             >
               {t.close}

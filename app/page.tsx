@@ -20,12 +20,14 @@ export interface Music {
 export default function Home() {
   const [selectedMusic, setSelectedMusic] = useState<Music | null>(null);
   const [showLyrics, setShowLyrics] = useState(false);
+  const [isLoadingLyrics, setIsLoadingLyrics] = useState(false);
   const [isDark, setIsDark] = useState(true);
   const [language, setLanguage] = useState<Language>("en");
 
   const handleViewLyrics = useCallback((music: Music) => {
     setSelectedMusic(music);
     setShowLyrics(true);
+    setIsLoadingLyrics(true);
   }, []);
 
   const handleAddToQueue = useCallback(
@@ -111,13 +113,19 @@ export default function Home() {
         onViewLyrics={handleViewLyrics}
         onAddToQueue={handleAddToQueue}
         language={language}
+        isLoadingLyrics={isLoadingLyrics}
+        selectedMusicId={selectedMusic?.id}
       />
       {selectedMusic && (
         <LyricsModal
           isOpen={showLyrics}
-          onClose={() => setShowLyrics(false)}
+          onClose={() => {
+            setShowLyrics(false);
+            setIsLoadingLyrics(false);
+          }}
           music={selectedMusic}
           language={language}
+          onLoadingChange={setIsLoadingLyrics}
         />
       )}
     </main>
