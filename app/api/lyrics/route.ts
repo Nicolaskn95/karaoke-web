@@ -76,127 +76,133 @@ async function fetchGeniusLyrics(
 
   // Obter a URL completa da música no Genius
   const songUrl = `https://genius.com${songPath}`;
-  console.log("[Genius API] URL da música:", songUrl);
+  console.log("[Genius API] URL da música encontrada:", songUrl);
 
-  // Configurar User-Agent globalmente para requisições HTTP do Node.js
-  // Isso pode ajudar algumas bibliotecas que usam fetch/axios
-  if (typeof process !== 'undefined') {
-    process.env.USER_AGENT = userAgent;
-  }
-
-  // @ts-ignore - genius-lyrics-api não tem tipos TypeScript
-  const geniusLyricsApi = require("genius-lyrics-api");
+  // Pular a biblioteca genius-lyrics-api completamente e fazer scraping manual direto
+  // A biblioteca não envia User-Agent e causa erro 403
+  console.log("[Genius API] Fazendo scraping manual direto (sem biblioteca)...");
   
-  const options = {
-    apiKey: apiKey,
-    title: title,
-    artist: artist,
-    optimizeQuery: true,
-  };
-
-  console.log("[Genius API] Tentando buscar letra com genius-lyrics-api...");
-  console.log("[Genius API] User-Agent configurado globalmente:", userAgent);
-
-  try {
-    // Tentar getSong primeiro
-    console.log("[Genius API] Tentando getSong...");
-    const songData = await geniusLyricsApi.getSong(options);
-    if (songData && songData.lyrics) {
-      console.log("[Genius API] Letra obtida com getSong");
-      return songData.lyrics;
-    }
-  } catch (err: any) {
-    console.error("[Genius API] getSong falhou:", err);
-    console.error("[Genius API] Erro getSong - status:", err.status || err.response?.status);
-    console.error("[Genius API] Erro getSong - message:", err.message);
-    
-    // Se for 403, tentar fazer scraping manual
-    if (err.status === 403 || err.response?.status === 403 || err.message?.includes("403")) {
-      console.error("[Genius API] ERRO 403 detectado - tentando scraping manual com User-Agent...");
-      
-      // Tentar fazer scraping manual da página HTML
-      try {
-        const lyrics = await fetchLyricsManually(songUrl, userAgent);
-        if (lyrics) {
-          console.log("[Genius API] Letra obtida com scraping manual");
-          return lyrics;
-        }
-      } catch (manualErr) {
-        console.error("[Genius API] Scraping manual também falhou:", manualErr);
-        throw new Error("403 Forbidden - A biblioteca genius-lyrics-api não está enviando User-Agent e o scraping manual também falhou");
-      }
-    }
-  }
-
-  // Se não conseguiu, usar getLyrics
-  try {
-    console.log("[Genius API] Tentando getLyrics...");
-    const lyrics = await geniusLyricsApi.getLyrics(options);
-    console.log("[Genius API] Letra obtida com getLyrics");
-    return lyrics;
-  } catch (err: any) {
-    console.error("[Genius API] getLyrics também falhou:", err);
-    console.error("[Genius API] Erro getLyrics - status:", err.status || err.response?.status);
-    
-    // Se for 403, tentar scraping manual
-    if (err.status === 403 || err.response?.status === 403 || err.message?.includes("403")) {
-      console.error("[Genius API] ERRO 403 no getLyrics - tentando scraping manual...");
-      try {
-        const lyrics = await fetchLyricsManually(songUrl, userAgent);
-        if (lyrics) {
-          return lyrics;
-        }
-      } catch (manualErr) {
-        console.error("[Genius API] Scraping manual falhou:", manualErr);
-      }
-    }
-    
-    throw err;
-  }
+  return await fetchLyricsManually(songUrl, userAgent);
 }
 
 /**
  * Faz scraping manual da página HTML do Genius com User-Agent
+ * Extrai a letra diretamente do HTML sem usar bibliotecas
  */
 async function fetchLyricsManually(songUrl: string, userAgent: string): Promise<string> {
   console.log("[Genius API] Fazendo scraping manual de:", songUrl);
+  console.log("[Genius API] User-Agent:", userAgent);
   
   const response = await fetch(songUrl, {
     method: "GET",
     headers: {
       "User-Agent": userAgent,
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      "Accept-Language": "en-US,en;q=0.5",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9",
+      "Accept-Encoding": "gzip, deflate, br",
+      "Connection": "keep-alive",
+      "Upgrade-Insecure-Requests": "1",
     },
   });
 
+  console.log("[Genius API] Status da resposta do scraping:", response.status);
+  console.log("[Genius API] Headers da resposta:", Object.fromEntries(response.headers.entries()));
+
   if (!response.ok) {
-    throw new Error(`Failed to fetch Genius page: ${response.status}`);
+    const errorText = await response.text().catch(() => "Unable to read error response");
+    console.error("[Genius API] Erro ao buscar página:", response.status, errorText.substring(0, 500));
+    throw new Error(`Failed to fetch Genius page: ${response.status} - ${errorText.substring(0, 200)}`);
   }
 
   const html = await response.text();
+  console.log("[Genius API] HTML recebido, tamanho:", html.length, "caracteres");
   
-  // Extrair a letra do HTML (simplificado - pode precisar de ajustes)
-  // A biblioteca genius-lyrics-api faz isso melhor, mas vamos tentar uma extração básica
-  const lyricsMatch = html.match(/<div[^>]*class="[^"]*lyrics[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+  // O Genius usa um padrão específico para a letra
+  // Vamos tentar vários padrões comuns
+  let lyrics = "";
   
-  if (lyricsMatch && lyricsMatch[1]) {
-    // Limpar HTML básico
-    let lyrics = lyricsMatch[1]
-      .replace(/<[^>]+>/g, '') // Remove tags HTML
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .trim();
-    
-    if (lyrics.length > 100) { // Se encontrou algo substancial
-      return lyrics;
+  // Padrão 1: div com data-lyrics-container-id
+  const pattern1 = /<div[^>]*data-lyrics-container[^>]*>([\s\S]*?)<\/div>/gi;
+  let match1 = pattern1.exec(html);
+  if (match1) {
+    lyrics = match1[1];
+    console.log("[Genius API] Letra encontrada com padrão 1 (data-lyrics-container)");
+  }
+  
+  // Padrão 2: div com class contendo "lyrics"
+  if (!lyrics || lyrics.length < 100) {
+    const pattern2 = /<div[^>]*class="[^"]*lyrics[^"]*"[^>]*>([\s\S]*?)<\/div>/gi;
+    const matches2 = html.match(pattern2);
+    if (matches2 && matches2.length > 0) {
+      // Pegar o maior match
+      lyrics = matches2.reduce((prev, curr) => curr.length > prev.length ? curr : prev, "");
+      console.log("[Genius API] Letra encontrada com padrão 2 (class lyrics)");
     }
   }
   
-  throw new Error("Não foi possível extrair a letra do HTML");
+  // Padrão 3: div dentro de [data-lyrics-container="true"]
+  if (!lyrics || lyrics.length < 100) {
+    const pattern3 = /<div[^>]*data-lyrics-container="true"[^>]*>([\s\S]*?)<\/div>/gi;
+    let match3 = pattern3.exec(html);
+    if (match3) {
+      lyrics = match3[1];
+      console.log("[Genius API] Letra encontrada com padrão 3 (data-lyrics-container=true)");
+    }
+  }
+  
+  // Padrão 4: Buscar por todas as divs e pegar a maior que parece ser letra
+  if (!lyrics || lyrics.length < 100) {
+    const allDivs = html.match(/<div[^>]*>([\s\S]*?)<\/div>/gi);
+    if (allDivs) {
+      // Filtrar divs que parecem conter letras (muitas quebras de linha, texto longo)
+      const lyricsDivs = allDivs
+        .map(div => {
+          const text = div.replace(/<[^>]+>/g, '').trim();
+          const lineBreaks = (text.match(/\n/g) || []).length;
+          return { div, text, lineBreaks, length: text.length };
+        })
+        .filter(item => item.lineBreaks > 10 && item.length > 500)
+        .sort((a, b) => b.length - a.length);
+      
+      if (lyricsDivs.length > 0) {
+        lyrics = lyricsDivs[0].div;
+        console.log("[Genius API] Letra encontrada com padrão 4 (heurística)");
+      }
+    }
+  }
+  
+  if (!lyrics || lyrics.length < 100) {
+    console.error("[Genius API] Não foi possível encontrar a letra no HTML");
+    console.error("[Genius API] Primeiros 2000 caracteres do HTML:", html.substring(0, 2000));
+    throw new Error("Não foi possível extrair a letra do HTML do Genius. A estrutura da página pode ter mudado.");
+  }
+  
+  // Limpar HTML e formatar a letra
+  console.log("[Genius API] Letra bruta encontrada, tamanho:", lyrics.length);
+  
+  // Remover tags HTML mas preservar quebras de linha
+  lyrics = lyrics
+    .replace(/<br\s*\/?>/gi, '\n') // <br> vira quebra de linha
+    .replace(/<\/p>/gi, '\n\n') // </p> vira quebra dupla
+    .replace(/<\/div>/gi, '\n') // </div> vira quebra de linha
+    .replace(/<[^>]+>/g, '') // Remove todas as outras tags
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/\n{3,}/g, '\n\n') // Remove múltiplas quebras de linha
+    .trim();
+  
+  console.log("[Genius API] Letra limpa, tamanho final:", lyrics.length);
+  
+  if (lyrics.length < 50) {
+    throw new Error("Letra extraída é muito curta, pode estar incorreta");
+  }
+  
+  return lyrics;
 }
 
 export async function GET(request: NextRequest) {
