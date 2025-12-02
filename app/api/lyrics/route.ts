@@ -51,6 +51,14 @@ export async function GET(request: NextRequest) {
             process.env.NODE_ENV === "production"
               ? "Configure GENIUS_API_KEY nas variáveis de ambiente da plataforma de deploy (Vercel, Netlify, etc.)"
               : "Configure GENIUS_API_KEY no arquivo .env.local",
+          debug: {
+            environment: process.env.NODE_ENV,
+            apiKeyFound: false,
+            apiKeyLength: 0,
+            availableEnvVars: Object.keys(process.env).filter(
+              (key) => key.includes("GENIUS") || key.includes("API")
+            ),
+          },
         },
         { status: 500 }
       );
@@ -131,10 +139,16 @@ export async function GET(request: NextRequest) {
           {
             error: "Token de acesso do Genius inválido ou expirado",
             hint: "Verifique se o token está correto em https://genius.com/api-clients e se não expirou",
-            debug: process.env.NODE_ENV === "development" ? {
+            debug: {
               apiKeyMasked: maskApiKey(GENIUS_API_KEY),
-              apiKeyLength: GENIUS_API_KEY?.length,
-            } : undefined,
+              apiKeyLength: GENIUS_API_KEY?.length || 0,
+              environment: process.env.NODE_ENV,
+              apiKeyFirstChars: GENIUS_API_KEY?.substring(0, 10) || "N/A",
+              apiKeyLastChars: GENIUS_API_KEY?.substring(GENIUS_API_KEY.length - 10) || "N/A",
+              statusCode: statusCode,
+              errorCode: errorCode,
+              errorMessage: error.message,
+            },
           },
           { status: 401 }
         );
@@ -153,14 +167,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           error: "Erro ao buscar letra no Genius",
-          details:
-            process.env.NODE_ENV === "development"
-              ? {
-                  message: error.message,
-                  status: statusCode,
-                  response: error.response?.data,
-                }
-              : undefined,
+          debug: {
+            message: error.message,
+            status: statusCode,
+            errorCode: errorCode,
+            apiKeyMasked: maskApiKey(GENIUS_API_KEY),
+            apiKeyLength: GENIUS_API_KEY?.length || 0,
+            environment: process.env.NODE_ENV,
+            response: error.response?.data,
+          },
         },
         { status: 500 }
       );
@@ -170,7 +185,15 @@ export async function GET(request: NextRequest) {
     console.error("[Lyrics API] API Key (mascarada):", maskApiKey(process.env.GENIUS_API_KEY));
     console.error("[Lyrics API] Ambiente:", process.env.NODE_ENV);
     return NextResponse.json(
-      { error: "Erro interno do servidor" },
+      {
+        error: "Erro interno do servidor",
+        debug: {
+          message: error instanceof Error ? error.message : "Unknown error",
+          apiKeyMasked: maskApiKey(process.env.GENIUS_API_KEY),
+          apiKeyLength: process.env.GENIUS_API_KEY?.length || 0,
+          environment: process.env.NODE_ENV,
+        },
+      },
       { status: 500 }
     );
   }
