@@ -2,9 +2,6 @@ import { type NextRequest, NextResponse } from "next/server";
 import dotenv from "dotenv";
 dotenv.config();
 
-// @ts-ignore - genius-lyrics-api não tem tipos TypeScript
-const geniusLyricsApi = require("genius-lyrics-api");
-
 /**
  * Mascara a API key para logs (mostra apenas primeiros e últimos caracteres)
  */
@@ -12,6 +9,81 @@ function maskApiKey(apiKey: string | undefined): string {
   if (!apiKey) return "undefined";
   if (apiKey.length <= 8) return "***";
   return `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
+}
+
+/**
+ * Busca letra no Genius usando a API oficial diretamente
+ * Inclui User-Agent para evitar bloqueio 403
+ */
+async function fetchGeniusLyrics(
+  apiKey: string,
+  artist: string,
+  title: string
+): Promise<string> {
+  const GENIUS_API_BASE = "https://api.genius.com";
+  
+  // Primeiro, buscar a música na API do Genius
+  const searchUrl = `${GENIUS_API_BASE}/search?q=${encodeURIComponent(`${artist} ${title}`)}`;
+  
+  const userAgent = "https://v0-karaoke-website-development.vercel.app";
+  
+  console.log("[Genius API] Buscando música:", { artist, title });
+  console.log("[Genius API] User-Agent configurado:", userAgent);
+  
+  const searchResponse = await fetch(searchUrl, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "User-Agent": userAgent, // IMPORTANTE: Evita bloqueio 403 do Genius
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+  });
+
+  if (!searchResponse.ok) {
+    const errorText = await searchResponse.text();
+    console.error("[Genius API] Erro na busca:", searchResponse.status, errorText);
+    throw new Error(`Genius API search failed: ${searchResponse.status} - ${errorText}`);
+  }
+
+  const searchData = await searchResponse.json();
+  
+  // Pegar o primeiro resultado (mais relevante)
+  const hits = searchData.response?.hits;
+  if (!hits || hits.length === 0) {
+    throw new Error("Nenhuma música encontrada no Genius");
+  }
+
+  const songPath = hits[0].result?.path;
+  if (!songPath) {
+    throw new Error("Caminho da música não encontrado");
+  }
+
+  // Agora buscar a letra usando a biblioteca genius-lyrics-api
+  // (ela faz o scraping da página HTML)
+  // @ts-ignore - genius-lyrics-api não tem tipos TypeScript
+  const geniusLyricsApi = require("genius-lyrics-api");
+  
+  const options = {
+    apiKey: apiKey,
+    title: title,
+    artist: artist,
+    optimizeQuery: true,
+  };
+
+  try {
+    // Tentar getSong primeiro
+    const songData = await geniusLyricsApi.getSong(options);
+    if (songData && songData.lyrics) {
+      return songData.lyrics;
+    }
+  } catch (err) {
+    console.log("[Genius API] getSong falhou, tentando getLyrics:", err);
+  }
+
+  // Se não conseguiu, usar getLyrics
+  const lyrics = await geniusLyricsApi.getLyrics(options);
+  return lyrics;
 }
 
 export async function GET(request: NextRequest) {
@@ -64,34 +136,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Configuração conforme documentação do Genius API
-    // https://docs.genius.com/#/getting-started-h1
-    const options = {
-      apiKey: GENIUS_API_KEY, // Access Token obtido em https://genius.com/api-clients
-      title: musica,
-      artist: artista,
-      optimizeQuery: true, // Limpa o título (remove "feat.", "Live", etc) para melhorar a busca
-    };
-
+    // Buscar letra usando a API oficial do Genius diretamente
+    // Isso nos permite adicionar o User-Agent necessário para evitar bloqueio 403
     try {
-      // Usar getSong para obter dados completos incluindo URL da página
-      let songData: any = null;
-      let lyrics = "";
-
-      // Primeiro tentar getSong que retorna mais informações
-      try {
-        songData = await geniusLyricsApi.getSong(options);
-        if (songData && songData.lyrics) {
-          lyrics = songData.lyrics;
-        }
-      } catch (err) {
-        console.log("getSong falhou, tentando getLyrics:", err);
-      }
-
-      // Se não conseguiu com getSong, usar getLyrics
-      if (!lyrics) {
-        lyrics = await geniusLyricsApi.getLyrics(options);
-      }
+      const lyrics = await fetchGeniusLyrics(GENIUS_API_KEY, artista, musica);
 
       if (!lyrics || lyrics.trim().length === 0) {
         return NextResponse.json(
@@ -116,6 +164,34 @@ export async function GET(request: NextRequest) {
       // AxiosError tem status em error.status ou error.response.status
       const statusCode = error.status || error.response?.status;
       const errorCode = error.code;
+
+      // Detecta erro 403 (Forbidden) - geralmente por falta de User-Agent
+      if (
+        statusCode === 403 ||
+        error.message?.includes("403") ||
+        error.message?.includes("Forbidden")
+      ) {
+        console.error("========================================");
+        console.error("[FORBIDDEN] Erro 403 detectado!");
+        console.error("[FORBIDDEN] Possível causa: User-Agent não configurado");
+        console.error("[FORBIDDEN] API Key usada (mascarada):", maskApiKey(GENIUS_API_KEY));
+        console.error("========================================");
+
+        return NextResponse.json(
+          {
+            error: "Acesso negado pela API do Genius (403 Forbidden)",
+            hint: "A API do Genius bloqueia requisições sem User-Agent. Verifique se o User-Agent está sendo enviado corretamente.",
+            debug: {
+              apiKeyMasked: maskApiKey(GENIUS_API_KEY),
+              apiKeyLength: GENIUS_API_KEY?.length || 0,
+              environment: process.env.NODE_ENV,
+              statusCode: statusCode,
+              errorMessage: error.message,
+            },
+          },
+          { status: 403 }
+        );
+      }
 
       // Detecta erro 401 (Unauthorized)
       if (
