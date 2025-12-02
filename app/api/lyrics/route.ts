@@ -5,6 +5,15 @@ dotenv.config();
 // @ts-ignore - genius-lyrics-api não tem tipos TypeScript
 const geniusLyricsApi = require("genius-lyrics-api");
 
+/**
+ * Mascara a API key para logs (mostra apenas primeiros e últimos caracteres)
+ */
+function maskApiKey(apiKey: string | undefined): string {
+  if (!apiKey) return "undefined";
+  if (apiKey.length <= 8) return "***";
+  return `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -19,6 +28,12 @@ export async function GET(request: NextRequest) {
     }
 
     const GENIUS_API_KEY = process.env.GENIUS_API_KEY;
+
+    // Log da API key mascarada para debug
+    console.log("[Lyrics API] Ambiente:", process.env.NODE_ENV);
+    console.log("[Lyrics API] API Key carregada:", GENIUS_API_KEY ? "SIM" : "NÃO");
+    console.log("[Lyrics API] API Key (mascarada):", maskApiKey(GENIUS_API_KEY));
+    console.log("[Lyrics API] Tamanho da API Key:", GENIUS_API_KEY?.length || 0);
 
     if (!GENIUS_API_KEY) {
       console.error("GENIUS_API_KEY não encontrada nas variáveis de ambiente");
@@ -81,9 +96,13 @@ export async function GET(request: NextRequest) {
         lyrics,
       });
     } catch (error: any) {
+      // Log detalhado do erro
       console.error("Erro ao buscar letra no Genius:", error);
       console.error("Status code:", error.status || error.response?.status);
       console.error("Error details:", error.response?.data || error.message);
+      console.error("[Lyrics API] API Key usada (mascarada):", maskApiKey(GENIUS_API_KEY));
+      console.error("[Lyrics API] Tamanho da API Key:", GENIUS_API_KEY?.length || 0);
+      console.error("[Lyrics API] Ambiente:", process.env.NODE_ENV);
 
       // Tratamento de erros específicos da API do Genius
       // AxiosError tem status em error.status ou error.response.status
@@ -97,10 +116,25 @@ export async function GET(request: NextRequest) {
         error.message?.includes("401") ||
         error.message?.includes("Unauthorized")
       ) {
+        // Log específico para unauthorized
+        console.error("========================================");
+        console.error("[UNAUTHORIZED] Erro 401 detectado!");
+        console.error("[UNAUTHORIZED] API Key usada (mascarada):", maskApiKey(GENIUS_API_KEY));
+        console.error("[UNAUTHORIZED] Tamanho da API Key:", GENIUS_API_KEY?.length || 0);
+        console.error("[UNAUTHORIZED] Ambiente:", process.env.NODE_ENV);
+        console.error("[UNAUTHORIZED] Primeiros 10 chars:", GENIUS_API_KEY?.substring(0, 10));
+        console.error("[UNAUTHORIZED] Últimos 10 chars:", GENIUS_API_KEY?.substring(GENIUS_API_KEY.length - 10));
+        console.error("[UNAUTHORIZED] Erro completo:", JSON.stringify(error, null, 2));
+        console.error("========================================");
+
         return NextResponse.json(
           {
             error: "Token de acesso do Genius inválido ou expirado",
             hint: "Verifique se o token está correto em https://genius.com/api-clients e se não expirou",
+            debug: process.env.NODE_ENV === "development" ? {
+              apiKeyMasked: maskApiKey(GENIUS_API_KEY),
+              apiKeyLength: GENIUS_API_KEY?.length,
+            } : undefined,
           },
           { status: 401 }
         );
@@ -133,6 +167,8 @@ export async function GET(request: NextRequest) {
     }
   } catch (error) {
     console.error("Erro na API de letras:", error);
+    console.error("[Lyrics API] API Key (mascarada):", maskApiKey(process.env.GENIUS_API_KEY));
+    console.error("[Lyrics API] Ambiente:", process.env.NODE_ENV);
     return NextResponse.json(
       { error: "Erro interno do servidor" },
       { status: 500 }
