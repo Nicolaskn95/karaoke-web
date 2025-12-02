@@ -22,13 +22,15 @@ async function fetchGeniusLyrics(
 ): Promise<string> {
   const GENIUS_API_BASE = "https://api.genius.com";
   
+  // User-Agent no formato correto (não apenas URL)
+  const userAgent = "KaraokeApp/1.0 (https://v0-karaoke-website-development.vercel.app)";
+  
   // Primeiro, buscar a música na API do Genius
   const searchUrl = `${GENIUS_API_BASE}/search?q=${encodeURIComponent(`${artist} ${title}`)}`;
   
-  const userAgent = "https://v0-karaoke-website-development.vercel.app";
-  
   console.log("[Genius API] Buscando música:", { artist, title });
   console.log("[Genius API] User-Agent configurado:", userAgent);
+  console.log("[Genius API] URL da busca:", searchUrl);
   
   const searchResponse = await fetch(searchUrl, {
     method: "GET",
@@ -40,9 +42,22 @@ async function fetchGeniusLyrics(
     },
   });
 
+  console.log("[Genius API] Status da resposta:", searchResponse.status);
+  console.log("[Genius API] Headers da resposta:", Object.fromEntries(searchResponse.headers.entries()));
+
   if (!searchResponse.ok) {
     const errorText = await searchResponse.text();
     console.error("[Genius API] Erro na busca:", searchResponse.status, errorText);
+    console.error("[Genius API] Headers enviados:", {
+      Authorization: `Bearer ${maskApiKey(apiKey)}`,
+      "User-Agent": userAgent,
+    });
+    
+    // Se for 403 na busca, lançar erro específico
+    if (searchResponse.status === 403) {
+      throw new Error(`Genius API search 403 Forbidden - User-Agent pode não estar sendo aceito. Status: ${searchResponse.status}, Response: ${errorText}`);
+    }
+    
     throw new Error(`Genius API search failed: ${searchResponse.status} - ${errorText}`);
   }
 
@@ -59,8 +74,16 @@ async function fetchGeniusLyrics(
     throw new Error("Caminho da música não encontrado");
   }
 
-  // Agora buscar a letra usando a biblioteca genius-lyrics-api
-  // (ela faz o scraping da página HTML)
+  // Obter a URL completa da música no Genius
+  const songUrl = `https://genius.com${songPath}`;
+  console.log("[Genius API] URL da música:", songUrl);
+
+  // Configurar User-Agent globalmente para requisições HTTP do Node.js
+  // Isso pode ajudar algumas bibliotecas que usam fetch/axios
+  if (typeof process !== 'undefined') {
+    process.env.USER_AGENT = userAgent;
+  }
+
   // @ts-ignore - genius-lyrics-api não tem tipos TypeScript
   const geniusLyricsApi = require("genius-lyrics-api");
   
@@ -71,19 +94,109 @@ async function fetchGeniusLyrics(
     optimizeQuery: true,
   };
 
+  console.log("[Genius API] Tentando buscar letra com genius-lyrics-api...");
+  console.log("[Genius API] User-Agent configurado globalmente:", userAgent);
+
   try {
     // Tentar getSong primeiro
+    console.log("[Genius API] Tentando getSong...");
     const songData = await geniusLyricsApi.getSong(options);
     if (songData && songData.lyrics) {
+      console.log("[Genius API] Letra obtida com getSong");
       return songData.lyrics;
     }
-  } catch (err) {
-    console.log("[Genius API] getSong falhou, tentando getLyrics:", err);
+  } catch (err: any) {
+    console.error("[Genius API] getSong falhou:", err);
+    console.error("[Genius API] Erro getSong - status:", err.status || err.response?.status);
+    console.error("[Genius API] Erro getSong - message:", err.message);
+    
+    // Se for 403, tentar fazer scraping manual
+    if (err.status === 403 || err.response?.status === 403 || err.message?.includes("403")) {
+      console.error("[Genius API] ERRO 403 detectado - tentando scraping manual com User-Agent...");
+      
+      // Tentar fazer scraping manual da página HTML
+      try {
+        const lyrics = await fetchLyricsManually(songUrl, userAgent);
+        if (lyrics) {
+          console.log("[Genius API] Letra obtida com scraping manual");
+          return lyrics;
+        }
+      } catch (manualErr) {
+        console.error("[Genius API] Scraping manual também falhou:", manualErr);
+        throw new Error("403 Forbidden - A biblioteca genius-lyrics-api não está enviando User-Agent e o scraping manual também falhou");
+      }
+    }
   }
 
   // Se não conseguiu, usar getLyrics
-  const lyrics = await geniusLyricsApi.getLyrics(options);
-  return lyrics;
+  try {
+    console.log("[Genius API] Tentando getLyrics...");
+    const lyrics = await geniusLyricsApi.getLyrics(options);
+    console.log("[Genius API] Letra obtida com getLyrics");
+    return lyrics;
+  } catch (err: any) {
+    console.error("[Genius API] getLyrics também falhou:", err);
+    console.error("[Genius API] Erro getLyrics - status:", err.status || err.response?.status);
+    
+    // Se for 403, tentar scraping manual
+    if (err.status === 403 || err.response?.status === 403 || err.message?.includes("403")) {
+      console.error("[Genius API] ERRO 403 no getLyrics - tentando scraping manual...");
+      try {
+        const lyrics = await fetchLyricsManually(songUrl, userAgent);
+        if (lyrics) {
+          return lyrics;
+        }
+      } catch (manualErr) {
+        console.error("[Genius API] Scraping manual falhou:", manualErr);
+      }
+    }
+    
+    throw err;
+  }
+}
+
+/**
+ * Faz scraping manual da página HTML do Genius com User-Agent
+ */
+async function fetchLyricsManually(songUrl: string, userAgent: string): Promise<string> {
+  console.log("[Genius API] Fazendo scraping manual de:", songUrl);
+  
+  const response = await fetch(songUrl, {
+    method: "GET",
+    headers: {
+      "User-Agent": userAgent,
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch Genius page: ${response.status}`);
+  }
+
+  const html = await response.text();
+  
+  // Extrair a letra do HTML (simplificado - pode precisar de ajustes)
+  // A biblioteca genius-lyrics-api faz isso melhor, mas vamos tentar uma extração básica
+  const lyricsMatch = html.match(/<div[^>]*class="[^"]*lyrics[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+  
+  if (lyricsMatch && lyricsMatch[1]) {
+    // Limpar HTML básico
+    let lyrics = lyricsMatch[1]
+      .replace(/<[^>]+>/g, '') // Remove tags HTML
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .trim();
+    
+    if (lyrics.length > 100) { // Se encontrou algo substancial
+      return lyrics;
+    }
+  }
+  
+  throw new Error("Não foi possível extrair a letra do HTML");
 }
 
 export async function GET(request: NextRequest) {
