@@ -2,15 +2,17 @@
 
 import type { Language } from "@/lib/i18n"
 import { translations } from "@/lib/i18n"
+import { Upload } from "lucide-react"
 
 interface HeaderProps {
   isDark: boolean
   onToggleTheme: () => void
   language: Language
   onToggleLanguage: () => void
+  onUploadClick: () => void
 }
 
-export default function Header({ isDark, onToggleTheme, language, onToggleLanguage }: HeaderProps) {
+export default function Header({ isDark, onToggleTheme, language, onToggleLanguage, onUploadClick }: HeaderProps) {
   const t = translations[language]
 
   return (
@@ -30,6 +32,15 @@ export default function Header({ isDark, onToggleTheme, language, onToggleLangua
 
           {/* Actions */}
           <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={onUploadClick}
+              className="px-2 py-1.5 md:py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary/70 hover:text-primary border border-primary/20 hover:border-primary/30 transition-all duration-200 opacity-60 hover:opacity-100"
+              aria-label={t.uploadMusics}
+              title={t.uploadMusics}
+            >
+              <Upload className="w-4 h-4" />
+            </button>
+
             <button
               onClick={onToggleLanguage}
               className="px-2 md:px-4 py-1.5 md:py-2 rounded-lg bg-primary/20 hover:bg-primary/40 text-primary border border-primary/30 hover:border-primary/50 transition-all duration-200 font-medium text-xs md:text-sm"

@@ -8,9 +8,21 @@ interface FilterSectionProps {
   onApplyFilter: (searchType: "song" | "artist" | "number", searchValue: string) => void
   onClearFilter: () => void
   language: Language
+  sortBy: "id" | "artista" | "musica"
+  sortOrder: "asc" | "desc"
+  onSortByChange: (value: "id" | "artista" | "musica") => void
+  onSortOrderChange: (value: "asc" | "desc") => void
 }
 
-export default function FilterSection({ onApplyFilter, onClearFilter, language }: FilterSectionProps) {
+export default function FilterSection({ 
+  onApplyFilter, 
+  onClearFilter, 
+  language,
+  sortBy,
+  sortOrder,
+  onSortByChange,
+  onSortOrderChange,
+}: FilterSectionProps) {
   const [searchType, setSearchType] = useState<"song" | "artist" | "number">("song")
   const [searchValue, setSearchValue] = useState("")
   const t = translations[language]
@@ -67,6 +79,33 @@ export default function FilterSection({ onApplyFilter, onClearFilter, language }
           >
             {t.clearFilter}
           </button>
+        </div>
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-3 md:gap-4 mt-4 pt-4 border-t border-white/10">
+        <div className="flex flex-col gap-2 flex-1">
+          <label className="text-xs md:text-sm text-muted-foreground">{t.sortBy}</label>
+          <select
+            value={sortBy}
+            onChange={(e) => onSortByChange(e.target.value as "id" | "artista" | "musica")}
+            className="px-3 py-2 rounded-lg bg-card border border-border text-foreground text-sm font-medium hover:border-primary/50 transition-colors"
+          >
+            <option value="id">{t.songNumber}</option>
+            <option value="artista">{t.artist}</option>
+            <option value="musica">{t.songName}</option>
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-2 flex-1">
+          <label className="text-xs md:text-sm text-muted-foreground">{t.sortOrder}</label>
+          <select
+            value={sortOrder}
+            onChange={(e) => onSortOrderChange(e.target.value as "asc" | "desc")}
+            className="px-3 py-2 rounded-lg bg-card border border-border text-foreground text-sm font-medium hover:border-primary/50 transition-colors"
+          >
+            <option value="asc">{t.ascending}</option>
+            <option value="desc">{t.descending}</option>
+          </select>
         </div>
       </div>
     </div>

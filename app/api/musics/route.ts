@@ -11,6 +11,8 @@ export async function GET(request: NextRequest) {
     const musica = searchParams.get("musica");
     const id = searchParams.get("id");
     const numero = searchParams.get("numero");
+    const sortBy = searchParams.get("sortBy");
+    const sortOrder = searchParams.get("sortOrder");
 
     // Build query string for Express API
     const queryParams = new URLSearchParams({
@@ -22,6 +24,8 @@ export async function GET(request: NextRequest) {
     if (musica) queryParams.append("musica", musica);
     if (id) queryParams.append("id", id);
     if (numero) queryParams.append("numero", numero);
+    if (sortBy) queryParams.append("sortBy", sortBy);
+    if (sortOrder) queryParams.append("sortOrder", sortOrder);
 
     const apiUrl = `${EXPRESS_API_URL}/musics?${queryParams.toString()}`;
 

@@ -34,6 +34,8 @@ export default function MusicGrid({
     type?: "song" | "artist" | "number";
     value?: string;
   }>({});
+  const [sortBy, setSortBy] = useState<"id" | "artista" | "musica">("id");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const t = translations[language];
 
   useEffect(() => {
@@ -57,6 +59,10 @@ export default function MusicGrid({
           }
         }
 
+        // Add sort parameters
+        queryParams.append("sortBy", sortBy);
+        queryParams.append("sortOrder", sortOrder);
+
         const response = await fetch(`/api/musics?${queryParams.toString()}`);
 
         if (!response.ok) {
@@ -76,7 +82,7 @@ export default function MusicGrid({
     };
 
     fetchMusics();
-  }, [currentPage, itemsPerPage, filterApplied, filterParams]);
+  }, [currentPage, itemsPerPage, filterApplied, filterParams, sortBy, sortOrder]);
 
   const handlePreviousPage = () => {
     setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -121,6 +127,10 @@ export default function MusicGrid({
         onApplyFilter={handleApplyFilter}
         onClearFilter={handleClearFilter}
         language={language}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortByChange={setSortBy}
+        onSortOrderChange={setSortOrder}
       />
 
       <div className="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">

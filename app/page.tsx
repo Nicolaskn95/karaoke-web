@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import MusicGrid from "@/components/music-grid";
 import LyricsModal from "@/components/lyrics-modal";
 import Header from "@/components/header";
+import UploadDialog from "@/components/upload-dialog";
 import type { Language } from "@/lib/i18n";
 import { translations } from "@/lib/i18n";
 
@@ -23,6 +24,7 @@ export default function Home() {
   const [isLoadingLyrics, setIsLoadingLyrics] = useState(false);
   const [isDark, setIsDark] = useState(true);
   const [language, setLanguage] = useState<Language>("en");
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
 
   const handleViewLyrics = useCallback((music: Music) => {
     setSelectedMusic(music);
@@ -108,6 +110,7 @@ export default function Home() {
         onToggleTheme={handleToggleTheme}
         language={language}
         onToggleLanguage={handleToggleLanguage}
+        onUploadClick={() => setShowUploadDialog(true)}
       />
       <MusicGrid
         onViewLyrics={handleViewLyrics}
@@ -128,6 +131,11 @@ export default function Home() {
           onLoadingChange={setIsLoadingLyrics}
         />
       )}
+      <UploadDialog
+        isOpen={showUploadDialog}
+        onClose={() => setShowUploadDialog(false)}
+        language={language}
+      />
     </main>
   );
 }
