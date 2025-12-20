@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
 
     const KARAOKE_SERVICE_URL =
       process.env.NEXT_PUBLIC_KARAOKE_SERVICE_URL || "http://localhost:4000";
+    console.log("KARAOKE_SERVICE_URL:", KARAOKE_SERVICE_URL);
 
     // Criar AbortController para timeout
     const controller = new AbortController();
