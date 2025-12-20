@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     let response: Response;
     try {
-      response = await fetch(`${KARAOKE_SERVICE_URL}/add-number`, {
+      response = await fetch(`http://192.168.0.126/add-number`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ number }),
