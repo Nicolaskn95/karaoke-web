@@ -37,7 +37,7 @@ export default function Home() {
       const t = translations[language];
 
       try {
-        const response = await fetch("/api/add-number", {
+        const response = await fetch(`http://${process.env.NEXT_PUBLIC_KARAOKE_SERVICE_URL}/add-number`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
