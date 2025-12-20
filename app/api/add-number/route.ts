@@ -1,4 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     const KARAOKE_SERVICE_URL =
-      process.env.KARAOKE_SERVICE_URL || "http://localhost:4000";
+      process.env.NEXT_PUBLIC_KARAOKE_SERVICE_URL || "http://localhost:4000";
 
     // Criar AbortController para timeout
     const controller = new AbortController();
