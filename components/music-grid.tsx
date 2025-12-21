@@ -5,13 +5,13 @@ import MusicRow from "./music-row";
 import PaginationControls from "./pagination-controls";
 import FilterSection from "./filter-section";
 import type { Music } from "@/app/page";
-import type { Language } from "@/lib/i18n";
+// ...existing code...
 import { translations } from "@/lib/i18n";
 
 interface MusicGridProps {
   onViewLyrics: (music: Music) => void;
   onAddToQueue: (music: Music) => void;
-  language: Language;
+  language?: string;
   isLoadingLyrics?: boolean;
   selectedMusicId?: string;
 }
@@ -19,7 +19,7 @@ interface MusicGridProps {
 export default function MusicGrid({
   onViewLyrics,
   onAddToQueue,
-  language,
+  // idioma fixo removido
   isLoadingLyrics = false,
   selectedMusicId,
 }: MusicGridProps) {
@@ -36,7 +36,7 @@ export default function MusicGrid({
   }>({});
   const [sortBy, setSortBy] = useState<"id" | "artista" | "musica">("id");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const t = translations[language];
+  const t = translations['pt'];
 
   useEffect(() => {
     const fetchMusics = async () => {
@@ -126,7 +126,7 @@ export default function MusicGrid({
       <FilterSection
         onApplyFilter={handleApplyFilter}
         onClearFilter={handleClearFilter}
-        language={language}
+        language={'pt'}
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSortByChange={setSortBy}
@@ -183,7 +183,7 @@ export default function MusicGrid({
                 music={music}
                 onViewLyrics={() => onViewLyrics(music)}
                 onAddToQueue={() => onAddToQueue(music)}
-                language={language}
+                language={'pt'}
                 isLoadingLyrics={
                   isLoadingLyrics && selectedMusicId === music.id
                 }
@@ -196,7 +196,7 @@ export default function MusicGrid({
               totalPages={totalPages}
               onPreviousPage={handlePreviousPage}
               onNextPage={handleNextPage}
-              language={language}
+              language={'pt'}
             />
           )}
         </>

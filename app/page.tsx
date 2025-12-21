@@ -6,7 +6,6 @@ import MusicGrid from "@/components/music-grid";
 import LyricsModal from "@/components/lyrics-modal";
 import Header from "@/components/header";
 import UploadDialog from "@/components/upload-dialog";
-import type { Language } from "@/lib/i18n";
 import { translations } from "@/lib/i18n";
 
 export interface Music {
@@ -23,7 +22,7 @@ export default function Home() {
   const [showLyrics, setShowLyrics] = useState(false);
   const [isLoadingLyrics, setIsLoadingLyrics] = useState(false);
   const [isDark, setIsDark] = useState(true);
-  const [language, setLanguage] = useState<Language>("en");
+  const language = "pt";
   const [showUploadDialog, setShowUploadDialog] = useState(false);
 
   const handleViewLyrics = useCallback((music: Music) => {
@@ -99,17 +98,13 @@ export default function Home() {
     document.documentElement.classList.toggle("dark");
   }, []);
 
-  const handleToggleLanguage = useCallback(() => {
-    setLanguage((prev) => (prev === "en" ? "pt" : "en"));
-  }, []);
+
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <Header
         isDark={isDark}
         onToggleTheme={handleToggleTheme}
-        language={language}
-        onToggleLanguage={handleToggleLanguage}
         onUploadClick={() => setShowUploadDialog(true)}
       />
       <MusicGrid

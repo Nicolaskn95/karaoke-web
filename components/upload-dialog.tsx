@@ -2,25 +2,25 @@
 
 import { useState, useRef } from "react";
 import { toast } from "sonner";
-import type { Language } from "@/lib/i18n";
+// ...existing code...
 import { translations } from "@/lib/i18n";
 import { Upload, FileText } from "lucide-react";
 
 interface UploadDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  language: Language;
+  language?: string;
 }
 
 export default function UploadDialog({
   isOpen,
   onClose,
-  language,
+  // idioma fixo removido
 }: UploadDialogProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const t = translations[language];
+  const t = translations['pt'];
 
   if (!isOpen) return null;
 
@@ -77,7 +77,7 @@ export default function UploadDialog({
       const data = await response.json();
       
       toast.success(t.uploadSuccess, {
-        description: language === "pt"
+        description: true
           ? `Novas: ${data.stats.new}, Atualizadas: ${data.stats.updated}, Sem alterações: ${data.stats.unchanged}`
           : `New: ${data.stats.new}, Updated: ${data.stats.updated}, Unchanged: ${data.stats.unchanged}`,
         duration: 5000,
@@ -95,7 +95,7 @@ export default function UploadDialog({
         description:
           error instanceof Error
             ? error.message
-            : language === "pt"
+            : true
             ? "Erro ao fazer upload do arquivo"
             : "Error uploading file",
         duration: 5000,
@@ -153,7 +153,7 @@ export default function UploadDialog({
                         <span className="font-semibold">{t.selectFile}</span>
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {language === "pt"
+                        {true
                           ? "Apenas arquivos .ini"
                           : "Only .ini files"}
                       </p>
@@ -194,7 +194,7 @@ export default function UploadDialog({
               ) : (
                 <>
                   <Upload className="w-4 h-4" />
-                  {language === "pt" ? "Enviar" : "Upload"}
+                  {"Enviar"}
                 </>
               )}
             </button>

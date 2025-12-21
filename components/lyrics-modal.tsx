@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from "react";
 import type { Music } from "@/app/page";
-import type { Language } from "@/lib/i18n";
+// ...existing code...
 import { translations } from "@/lib/i18n";
 
 interface LyricsModalProps {
   isOpen: boolean;
   onClose: () => void;
   music: Music;
-  language: Language;
+  language?: string;
   onLoadingChange?: (loading: boolean) => void;
 }
 
@@ -17,7 +17,7 @@ export default function LyricsModal({
   isOpen,
   onClose,
   music,
-  language,
+  // idioma fixo removido
   onLoadingChange,
 }: LyricsModalProps) {
   const [geniusLyrics, setGeniusLyrics] = useState<string>("");
@@ -29,7 +29,7 @@ export default function LyricsModal({
   const [error, setError] = useState<string | null>(null);
   const [isLoadingGenius, setIsLoadingGenius] = useState(false);
   const [isLoadingLrclib, setIsLoadingLrclib] = useState(false);
-  const t = translations[language];
+  const t = translations['pt'];
 
   // Lyrics atuais baseado na fonte selecionada
   const lyrics =
@@ -107,7 +107,7 @@ export default function LyricsModal({
     };
 
     fetchAllLyrics();
-  }, [isOpen, music, language, t, onLoadingChange]);
+  }, [isOpen, music, t, onLoadingChange]);
 
   // Selecionar automaticamente a primeira fonte encontrada
   useEffect(() => {
