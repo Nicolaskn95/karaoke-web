@@ -22,8 +22,9 @@ export default function LyricsModal({
 }: LyricsModalProps) {
   const [geniusLyrics, setGeniusLyrics] = useState<string>("");
   const [lrclibLyrics, setLrclibLyrics] = useState<string>("");
+  const [lyricsOvh, setLyricsOvh] = useState<string>("");
   const [selectedSource, setSelectedSource] = useState<
-    "genius" | "lrclib" | null
+    "genius" | "lrclib" | "ovh" | null
   >(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +38,8 @@ export default function LyricsModal({
       ? geniusLyrics
       : selectedSource === "lrclib"
       ? lrclibLyrics
+      : selectedSource === "ovh"
+      ? lyricsOvh
       : "";
 
   useEffect(() => {
@@ -48,14 +51,14 @@ export default function LyricsModal({
     setSelectedSource(null);
     setError(null);
 
-    // Buscar ambas as fontes simultaneamente
+    // Buscar todas as fontes simultaneamente
     const fetchAllLyrics = async () => {
       setIsLoading(true);
       setIsLoadingGenius(true);
       setIsLoadingLrclib(true);
       onLoadingChange?.(true);
 
-      // Buscar Genius
+      // Genius
       const fetchGenius = async () => {
         try {
           const geniusResponse = await fetch(
@@ -63,7 +66,6 @@ export default function LyricsModal({
               music.artista
             )}&musica=${encodeURIComponent(music.musica)}`
           );
-
           if (geniusResponse.ok) {
             const data = await geniusResponse.json();
             if (data.lyrics) {
@@ -77,7 +79,7 @@ export default function LyricsModal({
         }
       };
 
-      // Buscar LRCLIB
+      // LRCLIB
       const fetchLrclib = async () => {
         try {
           const lrclibResponse = await fetch(
@@ -85,7 +87,6 @@ export default function LyricsModal({
               music.artista
             )}&track_name=${encodeURIComponent(music.musica)}`
           );
-
           if (lrclibResponse.ok) {
             const data = await lrclibResponse.json();
             if (data.plainLyrics) {
@@ -99,8 +100,24 @@ export default function LyricsModal({
         }
       };
 
-      // Buscar ambas simultaneamente
-      await Promise.all([fetchGenius(), fetchLrclib()]);
+      // Lyrics.ovh
+      const fetchLyricsOvh = async () => {
+        try {
+          const ovhResponse = await fetch(
+            `https://api.lyrics.ovh/v1/${encodeURIComponent(music.artista)}/${encodeURIComponent(music.musica)}`
+          );
+          if (ovhResponse.ok) {
+            const data = await ovhResponse.json();
+            if (data.lyrics) {
+              setLyricsOvh(data.lyrics);
+            }
+          }
+        } catch (err) {
+          console.log("Erro ao buscar no Lyrics.ovh:", err);
+        }
+      };
+
+      await Promise.all([fetchGenius(), fetchLrclib(), fetchLyricsOvh()]);
 
       setIsLoading(false);
       onLoadingChange?.(false);
@@ -116,12 +133,15 @@ export default function LyricsModal({
         setSelectedSource("genius");
       } else if (lrclibLyrics) {
         setSelectedSource("lrclib");
+      } else if (lyricsOvh) {
+        setSelectedSource("ovh");
       } else if (
         !isLoading &&
         !isLoadingGenius &&
         !isLoadingLrclib &&
         !geniusLyrics &&
-        !lrclibLyrics
+        !lrclibLyrics &&
+        !lyricsOvh
       ) {
         setError(t.lyricsNotFound);
       }
@@ -192,7 +212,8 @@ export default function LyricsModal({
                 {(isLoadingGenius ||
                   isLoadingLrclib ||
                   geniusLyrics ||
-                  lrclibLyrics) && (
+                  lrclibLyrics ||
+                  lyricsOvh) && (
                   <div className="flex gap-2 mb-4 p-2 bg-gray-50 rounded-lg border border-gray-200/50">
                     <p className="text-xs text-gray-600 mr-2 flex items-center">
                       {t.selectSource}:
@@ -249,6 +270,21 @@ export default function LyricsModal({
                         <span>📝 {t.lrclib}</span>
                       )}
                     </button>
+                    <button
+                      onClick={() => {
+                        setSelectedSource("ovh");
+                      }}
+                      disabled={!lyricsOvh}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                        selectedSource === "ovh"
+                          ? "bg-primary text-white"
+                          : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
+                      } ${
+                        !lyricsOvh ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    >
+                      <span>🔗 Lyrics.ovh</span>
+                    </button>
                   </div>
                 )}
 
@@ -257,6 +293,8 @@ export default function LyricsModal({
                   <div className="text-xs text-gray-500 mb-2 pb-2 border-b border-gray-200/50">
                     {selectedSource === "lrclib"
                       ? "📝 Fonte: LRCLIB"
+                      : selectedSource === "ovh"
+                      ? "🔗 Fonte: Lyrics.ovh"
                       : "🎵 Fonte: Genius"}
                   </div>
                 )}
