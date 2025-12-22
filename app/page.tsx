@@ -69,9 +69,7 @@ export default function Home() {
           : "http://localhost:4000/add-number";
 
         const expressUrl =
-          process.env.NEXT_PUBLIC_EXPRESS_API_URL ||
-          process.env.NEXT_PUBLIC_API_URL ||
-          "http://localhost:3001";
+          process.env.EXPRESS_API_URL || "http://localhost:3001";
 
         const [karaokeResponse, expressResponse] = await Promise.allSettled([
           // POST para o serviço KARAOKE

@@ -52,9 +52,7 @@ export default function QueuePage() {
       try {
         // No frontend, precisa usar NEXT_PUBLIC_ para variáveis de ambiente
         const expressUrl =
-          process.env.NEXT_PUBLIC_EXPRESS_API_URL ||
-          process.env.NEXT_PUBLIC_API_URL ||
-          "http://localhost:3001";
+          process.env.EXPRESS_API_URL || "http://localhost:3001";
         const res = await fetch(`${expressUrl}/queue/today`);
         if (!res.ok) throw new Error("Erro ao buscar fila");
         const data = await res.json();
