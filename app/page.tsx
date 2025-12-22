@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
@@ -10,12 +10,12 @@ import NameModal from "@/components/name-modal";
 import { translations } from "@/lib/i18n";
 
 export interface Music {
-  _id?: string
-  id: string
-  arquivo: string
-  artista: string
-  musica: string
-  inicio: string
+  _id?: string;
+  id: string;
+  arquivo: string;
+  artista: string;
+  musica: string;
+  inicio: string;
 }
 
 export default function Home() {
@@ -39,11 +39,11 @@ export default function Home() {
     }
   }, []);
 
-const handleViewLyrics = useCallback((music: Music) => {
-  setSelectedMusic(music)
-  setShowLyrics(true)
-  setIsLoadingLyrics(true)
-}, [])
+  const handleViewLyrics = useCallback((music: Music) => {
+    setSelectedMusic(music);
+    setShowLyrics(true);
+    setIsLoadingLyrics(true);
+  }, []);
 
   const handleAddToQueue = useCallback(
     async (music: Music, name?: string) => {
@@ -68,7 +68,10 @@ const handleViewLyrics = useCallback((music: Music) => {
           ? `http://${process.env.NEXT_PUBLIC_KARAOKE_SERVICE_URL}/add-number`
           : "http://localhost:4000/add-number";
 
-        const expressUrl = process.env.NEXT_PUBLIC_EXPRESS_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+        const expressUrl =
+          process.env.NEXT_PUBLIC_EXPRESS_API_URL ||
+          process.env.NEXT_PUBLIC_API_URL ||
+          "http://localhost:3001";
 
         const [karaokeResponse, expressResponse] = await Promise.allSettled([
           // POST para o serviço KARAOKE
@@ -96,34 +99,53 @@ const handleViewLyrics = useCallback((music: Music) => {
 
         // Verificar resultado do KARAOKE
         let karaokeSuccess = false;
-        if (karaokeResponse.status === "fulfilled" && karaokeResponse.value.ok) {
+        if (
+          karaokeResponse.status === "fulfilled" &&
+          karaokeResponse.value.ok
+        ) {
           karaokeSuccess = true;
         } else if (karaokeResponse.status === "fulfilled") {
           // Tentar ler mensagem de erro se disponível
           try {
-            const errorData = await karaokeResponse.value.json().catch(() => ({}));
+            const errorData = await karaokeResponse.value
+              .json()
+              .catch(() => ({}));
             console.error("KARAOKE service error:", errorData);
           } catch (e) {
-            console.error("KARAOKE service error:", karaokeResponse.value.status);
+            console.error(
+              "KARAOKE service error:",
+              karaokeResponse.value.status
+            );
           }
         } else {
-          console.error("KARAOKE service connection error:", karaokeResponse.reason);
+          console.error(
+            "KARAOKE service connection error:",
+            karaokeResponse.reason
+          );
         }
 
         // Verificar resultado do Express
         let expressSuccess = false;
-        if (expressResponse.status === "fulfilled" && expressResponse.value.ok) {
+        if (
+          expressResponse.status === "fulfilled" &&
+          expressResponse.value.ok
+        ) {
           expressSuccess = true;
         } else if (expressResponse.status === "fulfilled") {
           // Tentar ler mensagem de erro se disponível
           try {
-            const errorData = await expressResponse.value.json().catch(() => ({}));
+            const errorData = await expressResponse.value
+              .json()
+              .catch(() => ({}));
             console.error("Express API error:", errorData);
           } catch (e) {
             console.error("Express API error:", expressResponse.value.status);
           }
         } else {
-          console.error("Express API connection error:", expressResponse.reason);
+          console.error(
+            "Express API connection error:",
+            expressResponse.reason
+          );
         }
 
         // Se pelo menos um dos dois funcionou, mostrar sucesso
@@ -134,7 +156,10 @@ const handleViewLyrics = useCallback((music: Music) => {
           });
         } else {
           // Se ambos falharam
-          if (karaokeResponse.status === "rejected" || expressResponse.status === "rejected") {
+          if (
+            karaokeResponse.status === "rejected" ||
+            expressResponse.status === "rejected"
+          ) {
             toast.error(t.serviceUnavailable, {
               description:
                 language === "pt"
@@ -169,22 +194,23 @@ const handleViewLyrics = useCallback((music: Music) => {
   );
 
   // Handler para salvar nome do modal
-  const handleSaveName = useCallback((name: string) => {
-    localStorage.setItem("karaokeUserName", name);
-    setUserName(name);
-    setShowNameModal(false);
-    if (pendingMusic) {
-      handleAddToQueue(pendingMusic, name);
-      setPendingMusic(null);
-    }
-  }, [pendingMusic, handleAddToQueue]);
+  const handleSaveName = useCallback(
+    (name: string) => {
+      localStorage.setItem("karaokeUserName", name);
+      setUserName(name);
+      setShowNameModal(false);
+      if (pendingMusic) {
+        handleAddToQueue(pendingMusic, name);
+        setPendingMusic(null);
+      }
+    },
+    [pendingMusic, handleAddToQueue]
+  );
 
-const handleToggleTheme = useCallback(() => {
-  setIsDark((prev) => !prev)
-  document.documentElement.classList.toggle("dark")
-}, [])
-
-
+  const handleToggleTheme = useCallback(() => {
+    setIsDark((prev) => !prev);
+    document.documentElement.classList.toggle("dark");
+  }, []);
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
