@@ -63,18 +63,24 @@ export default function Home() {
         const date = now.toISOString().slice(0, 10); // yyyy-mm-dd
         const time = now.toTimeString().slice(0, 5); // HH:MM
 
-        // Fazer POST nas duas rotas em paralelo usando as APIs do Next.js (que fazem proxy)
+        // Fazer POST nas duas rotas em paralelo
+        const karaokeUrl = process.env.NEXT_PUBLIC_KARAOKE_SERVICE_URL
+          ? `http://${process.env.NEXT_PUBLIC_KARAOKE_SERVICE_URL}/add-number`
+          : "http://localhost:4000/add-number";
+
+        const expressUrl = process.env.EXPRESS_API_URL;
+
         const [karaokeResponse, expressResponse] = await Promise.allSettled([
-          // POST para o serviço KARAOKE através da API do Next.js
-          fetch("/add-number", {
+          // POST para o serviço KARAOKE
+          fetch(karaokeUrl, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ number: music.id }),
           }),
-          // POST para a API Express através da API do Next.js
-          fetch("/queue/add", {
+          // POST para a API Express
+          fetch(`${expressUrl}/queue/add`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
