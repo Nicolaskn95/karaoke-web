@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
-import dotenv from 'dotenv'
+import dotenv from "dotenv";
 
-dotenv.config()
+dotenv.config();
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +17,16 @@ export async function POST(request: NextRequest) {
 
     const KARAOKE_SERVICE_URL =
       process.env.NEXT_PUBLIC_KARAOKE_SERVICE_URL || "http://localhost:4000";
-    console.log("KARAOKE_SERVICE_URL:", KARAOKE_SERVICE_URL);
+
+    // Garantir que a URL tenha o protocolo http:// se não tiver
+    const serviceUrl =
+      KARAOKE_SERVICE_URL.startsWith("http://") ||
+      KARAOKE_SERVICE_URL.startsWith("https://")
+        ? KARAOKE_SERVICE_URL
+        : `${KARAOKE_SERVICE_URL}`;
+
+    const karaokeEndpoint = `${serviceUrl}/add-number`;
+    console.log("KARAOKE_SERVICE_URL:", karaokeEndpoint);
 
     // Criar AbortController para timeout
     const controller = new AbortController();
@@ -25,7 +34,7 @@ export async function POST(request: NextRequest) {
 
     let response: Response;
     try {
-      response = await fetch(`http://192.168.0.126/add-number`, {
+      response = await fetch(karaokeEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ number }),
