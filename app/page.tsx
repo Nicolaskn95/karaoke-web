@@ -65,7 +65,7 @@ export default function Home() {
 
         // Fazer POST nas duas rotas em paralelo
         const karaokeUrl = process.env.NEXT_PUBLIC_KARAOKE_SERVICE_URL
-          ? `http://${process.env.NEXT_PUBLIC_KARAOKE_SERVICE_URL}/add-number`
+          ? `${process.env.NEXT_PUBLIC_KARAOKE_SERVICE_URL}/add-number`
           : "http://localhost:4000/add-number";
 
         const expressUrl = process.env.EXPRESS_API_URL;
