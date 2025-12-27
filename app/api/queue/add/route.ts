@@ -2,6 +2,14 @@ import { type NextRequest, NextResponse } from "next/server";
 
 const EXPRESS_API_URL = process.env.EXPRESS_API_URL;
 
+// Helper para normalizar URL (remove barra final se existir)
+function normalizeUrl(baseUrl: string | undefined, path: string): string {
+  if (!baseUrl) throw new Error("EXPRESS_API_URL não está definida");
+  const cleanBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${cleanBase}${cleanPath}`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -17,7 +25,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`${EXPRESS_API_URL}/queue/add`, {
+    const apiUrl = normalizeUrl(EXPRESS_API_URL, "queue/add");
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

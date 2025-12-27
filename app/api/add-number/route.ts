@@ -16,16 +16,18 @@ export async function POST(request: NextRequest) {
     }
 
     const KARAOKE_SERVICE_URL =
-      process.env.NEXT_PUBLIC_KARAOKE_SERVICE_URL || "http://localhost:4000";
+      process.env.KARAOKE_SERVICE_URL ||
+      process.env.NEXT_PUBLIC_KARAOKE_SERVICE_URL ||
+      "http://localhost:4000";
 
-    // Garantir que a URL tenha o protocolo http:// se não tiver
-    const serviceUrl =
-      KARAOKE_SERVICE_URL.startsWith("http://") ||
-      KARAOKE_SERVICE_URL.startsWith("https://")
-        ? KARAOKE_SERVICE_URL
-        : `${KARAOKE_SERVICE_URL}`;
+    // Helper para normalizar URL (remove barra final se existir)
+    function normalizeUrl(baseUrl: string, path: string): string {
+      const cleanBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+      const cleanPath = path.startsWith("/") ? path : `/${path}`;
+      return `${cleanBase}${cleanPath}`;
+    }
 
-    const karaokeEndpoint = `${serviceUrl}/add-number`;
+    const karaokeEndpoint = normalizeUrl(KARAOKE_SERVICE_URL, "add-number");
     console.log("KARAOKE_SERVICE_URL:", karaokeEndpoint);
 
     // Criar AbortController para timeout
