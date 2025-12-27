@@ -63,24 +63,19 @@ export default function Home() {
         const date = now.toISOString().slice(0, 10); // yyyy-mm-dd
         const time = now.toTimeString().slice(0, 5); // HH:MM
 
-        // Fazer POST nas duas rotas em paralelo
-        const karaokeUrl = process.env.NEXT_PUBLIC_KARAOKE_SERVICE_URL
-          ? `${process.env.NEXT_PUBLIC_KARAOKE_SERVICE_URL}/add-number`
-          : "http://localhost:4000/add-number";
-
-        const expressUrl = process.env.EXPRESS_API_URL;
-
+        // Fazer POST nas duas rotas em paralelo usando as APIs do Next.js (que fazem proxy no servidor)
+        // Isso resolve problemas no mobile iOS que bloqueia requisições diretas para IPs locais
         const [karaokeResponse, expressResponse] = await Promise.allSettled([
-          // POST para o serviço KARAOKE
-          fetch(karaokeUrl, {
+          // POST para o serviço KARAOKE através da API do Next.js
+          fetch("/api/add-number", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ number: music.id }),
           }),
-          // POST para a API Express
-          fetch(`${expressUrl}/queue/add`, {
+          // POST para a API Express através da API do Next.js
+          fetch("/api/queue/add", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
