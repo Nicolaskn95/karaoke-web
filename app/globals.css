@@ -144,4 +144,17 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+
+  @keyframes scroll-text-marquee {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(calc(-50% - 2rem));
+    }
+  }
+
+  .animate-scroll-text-marquee {
+    animation: scroll-text-marquee 15s linear infinite;
+  }
 }

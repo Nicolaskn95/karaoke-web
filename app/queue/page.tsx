@@ -5,6 +5,7 @@ import Header from "@/components/header";
 import { translations } from "@/lib/i18n";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import ScrollingText from "@/components/scrolling-text";
 
 interface QueueEntry {
   _id: string;
@@ -121,8 +122,8 @@ export default function QueuePage() {
                   <div className="flex-1 min-w-0">
                     {item.musica ? (
                       <>
-                        <p className="font-semibold text-lg truncate">
-                          {item.musica}
+                        <p className="font-semibold text-lg">
+                          <ScrollingText>{item.musica}</ScrollingText>
                         </p>
                         <p className="text-sm text-muted-foreground truncate">
                           {item.artista && `${item.artista} • `}
@@ -131,8 +132,8 @@ export default function QueuePage() {
                       </>
                     ) : (
                       <>
-                        <p className="font-semibold text-lg truncate">
-                          {item.name}
+                        <p className="font-semibold text-lg">
+                          <ScrollingText>{item.name}</ScrollingText>
                         </p>
                         <p className="text-sm text-muted-foreground">
                           ID: {item.musicId}

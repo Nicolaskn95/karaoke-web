@@ -5,6 +5,7 @@ import type { Language } from "@/lib/i18n"
 import { useState } from "react"
 import { translations } from "@/lib/i18n"
 import ConfirmDialog from "./confirm-dialog"
+import ScrollingText from "./scrolling-text"
 
 interface MusicRowProps {
   music: Music
@@ -43,7 +44,9 @@ export default function MusicRow({ music, onViewLyrics, onAddToQueue, language, 
 
         {/* Music Info */}
         <div className="flex-1 min-w-0 mx-3 md:mx-4">
-          <h3 className="text-xs md:text-sm font-semibold text-foreground truncate">{music.musica}</h3>
+          <h3 className="text-xs md:text-sm font-semibold text-foreground">
+            <ScrollingText>{music.musica}</ScrollingText>
+          </h3>
           <p className="text-xs text-muted-foreground truncate">{music.artista}</p>
         </div>
 
