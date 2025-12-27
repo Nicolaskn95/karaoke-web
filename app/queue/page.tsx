@@ -50,8 +50,9 @@ export default function QueuePage() {
       setLoading(true);
       setError(null);
       try {
-        // Usar a API route do Next.js que faz proxy para a API Express
-        const res = await fetch("/api/queue/today");
+        // No frontend, precisa usar NEXT_PUBLIC_ para variáveis de ambiente
+        const expressUrl = process.env.EXPRESS_API_URL;
+        const res = await fetch(`${expressUrl}/queue/today`);
         if (!res.ok) throw new Error("Erro ao buscar fila");
         const data = await res.json();
         setQueue(data);
