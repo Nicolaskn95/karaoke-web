@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
         "Content-Type": "application/json",
       },
     });
-
+    console.log("response", response);
     if (!response.ok) {
       throw new Error(`Express API returned ${response.status}`);
     }
