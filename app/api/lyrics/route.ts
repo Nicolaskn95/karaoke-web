@@ -1,70 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-
-const GENIUS_API_BASE = "https://api.genius.com";
-const USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-
-/**
- * Busca música no Genius e retorna a URL
- */
-async function searchSong(accessToken: string, artist: string, title: string): Promise<string> {
-  const url = `${GENIUS_API_BASE}/search?access_token=${accessToken}&q=${encodeURIComponent(`${artist} ${title}`)}`;
-  
-  const response = await fetch(url);
-  
-  if (!response.ok) {
-    throw new Error(`Erro na busca: ${response.status}`);
-  }
-  
-  const data = await response.json();
-  const songUrl = data.response?.hits?.[0]?.result?.url;
-  
-  if (!songUrl) {
-    throw new Error("Música não encontrada");
-  }
-  
-  return songUrl;
-}
-
-/**
- * Extrai letra da página HTML do Genius
- */
-async function extractLyrics(songUrl: string): Promise<string> {
-  const response = await fetch(songUrl, {
-    headers: { "User-Agent": USER_AGENT },
-  });
-  
-  if (!response.ok) {
-    throw new Error(`Erro ao buscar página: ${response.status}`);
-  }
-  
-  const html = await response.text();
-  
-  // Busca a letra no HTML usando regex simples
-  const lyricsMatch = html.match(/<div[^>]*data-lyrics-container[^>]*>([\s\S]*?)<\/div>/i) ||
-                     html.match(/<div[^>]*class="[^"]*lyrics[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
-  
-  if (!lyricsMatch) {
-    throw new Error("Letra não encontrada no HTML");
-  }
-  
-  // Limpa o HTML
-  let lyrics = lyricsMatch[1]
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-  
-  if (lyrics.length < 50) {
-    throw new Error("Letra muito curta");
-  }
-  
-  return lyrics;
-}
+import { Client } from "genius-lyrics";
 
 export async function GET(request: NextRequest) {
   try {
@@ -81,25 +16,44 @@ export async function GET(request: NextRequest) {
 
     const apiKey = process.env.GENIUS_API_KEY;
 
-    if (!apiKey) {
-      console.error("GENIUS_API_KEY não configurada");
-      return NextResponse.json(
-        { error: "GENIUS_API_KEY não configurada" },
-        { status: 500 }
-      );
+    // O pacote genius-lyrics pode funcionar sem API key, mas funciona melhor com uma
+    const client = apiKey ? new Client(apiKey) : new Client();
+
+    try {
+      // Busca a música
+      const searches = await client.songs.search(`${musica} ${artista}`);
+
+      if (!searches || searches.length === 0) {
+        return NextResponse.json(
+          { error: "Música não encontrada" },
+          { status: 404 }
+        );
+      }
+
+      // Pega a primeira música encontrada
+      const song = searches[0];
+      
+      // Obtém a letra
+      const lyrics = await song.lyrics();
+
+      if (!lyrics || lyrics.trim().length < 50) {
+        return NextResponse.json(
+          { error: "Letra não encontrada ou muito curta" },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({ lyrics: lyrics.trim() });
+    } catch (clientError) {
+      console.error("Erro ao buscar letra com genius-lyrics:", clientError);
+      throw clientError;
     }
-
-    const songUrl = await searchSong(apiKey, artista, musica);
-    const lyrics = await extractLyrics(songUrl);
-
-    return NextResponse.json({ lyrics });
   } catch (error) {
     console.error("Erro:", error);
     
     const message = error instanceof Error ? error.message : "Erro desconhecido";
-    const status = message.includes("403") ? 403 : 
-                   message.includes("401") ? 401 : 
-                   message.includes("não encontrada") ? 404 : 500;
+    const status = message.includes("403") || message.includes("401") ? 403 : 
+                   message.includes("não encontrada") || message.includes("não encontrado") ? 404 : 500;
     
     return NextResponse.json(
       { error: message },

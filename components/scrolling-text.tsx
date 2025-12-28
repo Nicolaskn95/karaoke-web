@@ -30,7 +30,7 @@ export default function ScrollingText({
       // Temporariamente remove truncate para medir o tamanho real do texto
       const currentClasses = text.className;
       text.className = "whitespace-nowrap inline-block";
-      
+
       // Força um reflow para garantir que as medidas estejam corretas
       void text.offsetWidth;
 
@@ -64,7 +64,6 @@ export default function ScrollingText({
       clearTimeout(timeoutId2);
     };
   }, [children, mobileBreakpoint]);
-
 
   return (
     <div

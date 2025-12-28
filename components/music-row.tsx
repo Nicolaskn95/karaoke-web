@@ -1,45 +1,53 @@
-"use client"
+"use client";
 
-import type { Music } from "@/app/page"
-import type { Language } from "@/lib/i18n"
-import { useState } from "react"
-import { translations } from "@/lib/i18n"
-import ConfirmDialog from "./confirm-dialog"
-import ScrollingText from "./scrolling-text"
+import type { Music } from "@/app/page";
+import type { Language } from "@/lib/i18n";
+import { useState } from "react";
+import { translations } from "@/lib/i18n";
+import ConfirmDialog from "./confirm-dialog";
+import ScrollingText from "./scrolling-text";
 
 interface MusicRowProps {
-  music: Music
-  onViewLyrics: () => void
-  onAddToQueue: () => void
-  language: Language
-  isLoadingLyrics?: boolean
+  music: Music;
+  onViewLyrics: () => void;
+  onAddToQueue: () => void;
+  language: Language;
+  isLoadingLyrics?: boolean;
 }
 
-export default function MusicRow({ music, onViewLyrics, onAddToQueue, language, isLoadingLyrics = false }: MusicRowProps) {
-  const [isAdding, setIsAdding] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
-  const t = translations[language]
+export default function MusicRow({
+  music,
+  onViewLyrics,
+  onAddToQueue,
+  language,
+  isLoadingLyrics = false,
+}: MusicRowProps) {
+  const [isAdding, setIsAdding] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const t = translations[language];
 
   const handleAddClick = async () => {
-    setShowConfirm(true)
-  }
+    setShowConfirm(true);
+  };
 
   const handleConfirmed = async () => {
-    setIsAdding(true)
+    setIsAdding(true);
     try {
-      await onAddToQueue()
-      setShowConfirm(false)
+      await onAddToQueue();
+      setShowConfirm(false);
     } finally {
-      setIsAdding(false)
+      setIsAdding(false);
     }
-  }
+  };
 
   return (
     <>
       <div className="group glass rounded-lg px-3 md:px-4 py-3 hover:bg-card/60 transition-all duration-200 flex items-center justify-between overflow-x-auto">
         {/* ID Column */}
         <div className="flex-shrink-0 w-12 md:w-16">
-          <p className="text-xs md:text-sm font-semibold text-accent">#{music.id}</p>
+          <p className="text-xs md:text-sm font-semibold text-accent">
+            #{music.id}
+          </p>
         </div>
 
         {/* Music Info */}
@@ -47,7 +55,9 @@ export default function MusicRow({ music, onViewLyrics, onAddToQueue, language, 
           <h3 className="text-xs md:text-sm font-semibold text-foreground">
             <ScrollingText>{music.musica}</ScrollingText>
           </h3>
-          <p className="text-xs text-muted-foreground truncate">{music.artista}</p>
+          <p className="text-xs text-muted-foreground truncate">
+            {music.artista}
+          </p>
         </div>
 
         {/* Button Group */}
@@ -86,5 +96,5 @@ export default function MusicRow({ music, onViewLyrics, onAddToQueue, language, 
         onCancel={() => setShowConfirm(false)}
       />
     </>
-  )
+  );
 }
