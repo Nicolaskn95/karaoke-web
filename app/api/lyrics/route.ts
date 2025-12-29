@@ -5,8 +5,6 @@ export const runtime = "nodejs";
 export const maxDuration = 30; // Aumentar timeout para 30 segundos na Vercel
 
 const GENIUS_API_BASE = "https://api.genius.com";
-const USER_AGENT =
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 /**
  * Busca música no Genius e retorna a URL (método manual como fallback)
@@ -20,7 +18,13 @@ async function searchSongManual(
     `${artist} ${title}`
   )}`;
 
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      Accept: "application/json",
+    },
+  });
 
   if (!response.ok) {
     throw new Error(`Erro na busca: ${response.status}`);
@@ -40,8 +44,22 @@ async function searchSongManual(
  * Extrai letra da página HTML do Genius (método manual como fallback)
  */
 async function extractLyricsManual(songUrl: string): Promise<string> {
+  // Headers completos para simular um navegador real e evitar bloqueio
   const response = await fetch(songUrl, {
-    headers: { "User-Agent": USER_AGENT },
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      Accept:
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7",
+      "Accept-Encoding": "gzip, deflate, br",
+      Connection: "keep-alive",
+      "Upgrade-Insecure-Requests": "1",
+      "Sec-Fetch-Dest": "document",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "none",
+      "Cache-Control": "max-age=0",
+    },
   });
 
   if (!response.ok) {
