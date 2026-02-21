@@ -1,30 +1,45 @@
-# Karaoke website development
+# 🎤 Karaokê de Família
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+Um sistema web desenvolvido para facilitar a escolha de músicas e o gerenciamento da fila durante as sessões de karaokê com a família e amigos. Chega de procurar pastas ou listas em papel; agora tudo pode ser feito pelo celular ou computador.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/nicolasnagano-2679s-projects/v0-karaoke-website-development)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/tK73O0qNRAW)
+## 🚀 O Projeto
 
-## Overview
+Este projeto nasceu da necessidade de organizar a diversão familiar. Ele permite que qualquer pessoa na rede visualize o catálogo de músicas disponíveis, consulte letras e adicione suas escolhas a uma fila de reprodução em tempo real.
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+### Principais Funcionalidades
+* **Catálogo Digital:** Explore todas as músicas disponíveis com filtros por nome ou artista.
+* **Fila em Tempo Real:** Adicione músicas à fila e acompanhe quem será o próximo a cantar.
+* **Consulta de Letras:** Visualize a letra da música diretamente na aplicação.
+* **Interface Responsiva:** Design amigável para ser usado tanto em desktops quanto em dispositivos móveis.
+* **Multilíngue:** Suporte para diferentes idiomas (Português, Inglês, Japonês).
 
-## Deployment
+---
 
-Your project is live at:
+## 🛠️ Tecnologias Utilizadas
 
-**[https://vercel.com/nicolasnagano-2679s-projects/v0-karaoke-website-development](https://vercel.com/nicolasnagano-2679s-projects/v0-karaoke-website-development)**
+O projeto utiliza tecnologias modernas para garantir performance e facilidade de manutenção:
 
-## Build your app
+* **Framework:** [Next.js](https://nextjs.org/) (App Router)
+* **Linguagem:** [TypeScript](https://www.typescriptlang.org/)
+* **Estilização:** [Tailwind CSS](https://tailwindcss.com/) + [Shadcn/UI](https://ui.shadcn.com/)
+* **Gerenciamento de Estado/Dados:** [Prisma](https://www.prisma.io/) (ORM)
+* **Iconografia:** [Lucide React](https://lucide.dev/)
 
-Continue building your app on:
+---
 
-**[https://v0.app/chat/tK73O0qNRAW](https://v0.app/chat/tK73O0qNRAW)**
+## 📸 Demonstração
 
-## How It Works
+![Interface do Karaokê](https://raw.githubusercontent.com/Nicolaskn95/assets-images/main/karaoke/Captura%20de%20tela%202026-02-21%20192619.png)
 
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+---
+
+## ⚙️ Como Rodar o Projeto
+
+### Pré-requisitos
+* Node.js instalado (v18 ou superior)
+* Gerenciador de pacotes (npm, yarn ou pnpm)
+
+---
+
+## 👨‍👩‍👧‍👦 Créditos
+Desenvolvido por **Nicolas Nagano** para tornar os momentos em família ainda mais divertidos.
