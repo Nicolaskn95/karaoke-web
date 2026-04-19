@@ -67,7 +67,7 @@ export default function Home() {
         // Isso resolve problemas no mobile iOS que bloqueia requisições diretas para IPs locais
         const [karaokeResponse, expressResponse] = await Promise.allSettled([
           // POST para o serviço KARAOKE através da API do Next.js
-          fetch("/api/add-number", {
+          fetch(`/api/${process.env.NEXT_PUBLIC_KARAOKE_SERVICE_URL}/add-number`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
