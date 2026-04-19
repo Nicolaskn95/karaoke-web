@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+
+// Corrigir acesso à env pública no client-side
+const KARAOKE_SERVICE_URL = process.env.NEXT_PUBLIC_KARAOKE_SERVICE_URL;
 import { toast } from "sonner";
 import MusicGrid from "@/components/music-grid";
 import LyricsModal from "@/components/lyrics-modal";
@@ -67,7 +70,7 @@ export default function Home() {
         // Isso resolve problemas no mobile iOS que bloqueia requisições diretas para IPs locais
         const [karaokeResponse, expressResponse] = await Promise.allSettled([
           // POST para o serviço KARAOKE através da API do Next.js
-          fetch(`/api/${process.env.NEXT_PUBLIC_KARAOKE_SERVICE_URL}/add-number`, {
+          fetch(`/api/${KARAOKE_SERVICE_URL}/add-number`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
