@@ -1,7 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import dotenv from "dotenv";
-
-dotenv.config();
+import { joinServiceUrl } from "@/lib/join-service-url";
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,15 +18,7 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_KARAOKE_SERVICE_URL ||
       "http://localhost:4000";
 
-    // Helper para normalizar URL (remove barra final se existir)
-    function normalizeUrl(baseUrl: string, path: string): string {
-      const cleanBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
-      const cleanPath = path.startsWith("/") ? path : `/${path}`;
-      return `${cleanBase}${cleanPath}`;
-    }
-
-    const karaokeEndpoint = normalizeUrl(KARAOKE_SERVICE_URL, "add-number");
-    console.log("KARAOKE_SERVICE_URL:", karaokeEndpoint);
+    const karaokeEndpoint = joinServiceUrl(KARAOKE_SERVICE_URL, "add-number");
 
     // Criar AbortController para timeout
     const controller = new AbortController();

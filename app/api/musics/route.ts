@@ -1,14 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { joinServiceUrl } from "@/lib/join-service-url";
 
 const EXPRESS_API_URL = process.env.EXPRESS_API_URL || "http://localhost:3000";
-
-// Helper para normalizar URL (remove barra final se existir)
-function normalizeUrl(baseUrl: string | undefined, path: string): string {
-  if (!baseUrl) throw new Error("EXPRESS_API_URL não está definida");
-  const cleanBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  return `${cleanBase}${cleanPath}`;
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -35,7 +28,10 @@ export async function GET(request: NextRequest) {
     if (sortBy) queryParams.append("sortBy", sortBy);
     if (sortOrder) queryParams.append("sortOrder", sortOrder);
 
-    const apiUrl = normalizeUrl(EXPRESS_API_URL, `musics?${queryParams.toString()}`);
+    const apiUrl = joinServiceUrl(
+      EXPRESS_API_URL,
+      `musics?${queryParams.toString()}`
+    );
 
     const response = await fetch(apiUrl, {
       method: "GET",

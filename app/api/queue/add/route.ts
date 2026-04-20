@@ -1,17 +1,20 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { joinServiceUrl } from "@/lib/join-service-url";
 
 const EXPRESS_API_URL = process.env.EXPRESS_API_URL;
 
-// Helper para normalizar URL (remove barra final se existir)
-function normalizeUrl(baseUrl: string | undefined, path: string): string {
-  if (!baseUrl) throw new Error("EXPRESS_API_URL não está definida");
-  const cleanBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  return `${cleanBase}${cleanPath}`;
-}
-
 export async function POST(request: NextRequest) {
   try {
+    if (!EXPRESS_API_URL) {
+      return NextResponse.json(
+        {
+          error: "Configuração ausente",
+          message: "EXPRESS_API_URL não está definida",
+        },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     const { musicId, name, date, time } = body;
 
@@ -25,7 +28,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const apiUrl = normalizeUrl(EXPRESS_API_URL, "queue/add");
+    const apiUrl = joinServiceUrl(EXPRESS_API_URL, "queue/add");
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {

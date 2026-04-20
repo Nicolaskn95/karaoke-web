@@ -1,25 +1,28 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { joinServiceUrl } from "@/lib/join-service-url";
 
 const EXPRESS_API_URL = process.env.EXPRESS_API_URL;
 
-// Helper para normalizar URL (remove barra final se existir)
-function normalizeUrl(baseUrl: string | undefined, path: string): string {
-  if (!baseUrl) throw new Error("EXPRESS_API_URL não está definida");
-  const cleanBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  return `${cleanBase}${cleanPath}`;
-}
-
 export async function GET(request: NextRequest) {
   try {
-    const apiUrl = normalizeUrl(EXPRESS_API_URL, "queue/today");
+    if (!EXPRESS_API_URL) {
+      return NextResponse.json(
+        {
+          error: "Configuração ausente",
+          message: "EXPRESS_API_URL não está definida",
+        },
+        { status: 500 }
+      );
+    }
+
+    const apiUrl = joinServiceUrl(EXPRESS_API_URL, "queue/today");
     const response = await fetch(apiUrl, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
       },
     });
-    console.log("response", response);
+
     if (!response.ok) {
       throw new Error(`Express API returned ${response.status}`);
     }
